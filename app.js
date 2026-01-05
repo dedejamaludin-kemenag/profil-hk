@@ -1,10 +1,9 @@
 (function () {
   const { createClient } = supabase;
 
-  // ✅ PAKAI KEY ASLI (jangan ubah 1 huruf pun)
+  // ✅ GANTI INI
   const SUPABASE_URL = "https://unhacmkhjawhoizdctdk.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
 
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -18,58 +17,38 @@
     btnApply: document.getElementById("btn_apply"),
     btnReset: document.getElementById("btn_reset"),
     tbody: document.getElementById("tbody"),
-    cards: document.getElementById("cards"),
     count: document.getElementById("count"),
     status: document.getElementById("status"),
-    statusDot: document.getElementById("statusDot"),
-    filtersPanel: document.getElementById("filtersPanel"),
   };
 
-  function safeText(x) {
-    return (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
-  function setStatus(msg, state = "ok") {
-    // state: ok | load | err
+  function setStatus(msg, loading = false) {
     els.status.textContent = msg;
-
-    els.statusDot.classList.remove("ok", "load", "err");
-    els.statusDot.classList.add(state);
-
-    const loading = state === "load";
     document.body.classList.toggle("loading", loading);
-
-    els.btnApply.disabled = loading;
-    els.btnReset.disabled = loading;
-
-    [els.profil, els.indikator, els.pic, els.program, els.penilaian, els.q].forEach((el) => {
-      if (el) el.disabled = loading;
-    });
   }
 
   function setOptions(selectEl, items) {
     const currentValue = selectEl.value;
-
+    const keep = selectEl.options[0]; // "Semua"
     selectEl.innerHTML = "";
-    const optAll = document.createElement("option");
-    optAll.value = "";
-    optAll.textContent = "Semua";
-    selectEl.appendChild(optAll);
+    selectEl.appendChild(keep);
+    
+    let valueFound = false;
 
-    const arr = (items || [])
-      .filter((v) => v != null && String(v).trim() !== "")
-      .map((v) => String(v));
-
-    for (const v of arr) {
+    (items || []).forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v;
       opt.textContent = v;
       selectEl.appendChild(opt);
-    }
+      if (v === currentValue) {
+        valueFound = true;
+      }
+    });
 
-    // Keep selection if still exists
-    const exists = arr.some((v) => v === currentValue);
-    selectEl.value = exists ? currentValue : "";
+    if (valueFound) {
+      selectEl.value = currentValue;
+    } else {
+      selectEl.value = ""; 
+    }
   }
 
   function readFilters() {
@@ -82,149 +61,124 @@
       q: els.q.value.trim().toLowerCase(),
     };
   }
-
-  // =========================================================================
-  // Load cascading filter options (RPC with fallback) - dibuat lebih tahan banting
-  // =========================================================================
+  
   async function loadFilterOptions(currentFilters) {
+    setStatus("Memuat opsi filter relevan...", true);
+
     const { profil, indikator, pic, program, penilaian } = currentFilters;
 
-    let data = null;
+    // Asumsi RPC Supabase 'get_program_pontren_options' sudah dibuat
+    
+    const { data, error } = await db
+      .rpc('get_program_pontren_options', { 
+        profil_filter: profil || null, 
+        indikator_filter: indikator || null, 
+        pic_filter: pic || null, 
+        program_filter: program || null,
+        penilaian_filter: penilaian || null 
+      })
+      .single(); 
 
-    // RPC (tanpa .single supaya aman jika function mengembalikan array 1 row)
-    const rpcRes = await db.rpc("get_program_pontren_options", {
-      profil_filter: profil || null,
-      indikator_filter: indikator || null,
-      pic_filter: pic || null,
-      program_filter: program || null,
-      penilaian_filter: penilaian || null,
-    });
-
-    if (!rpcRes.error) {
-      data = Array.isArray(rpcRes.data) ? rpcRes.data[0] : rpcRes.data;
-    } else {
-      console.warn("RPC get_program_pontren_options gagal, fallback ke tabel opsi:", rpcRes.error);
-
-      const fallback = await db
+    if (error) {
+      console.warn("Gagal memanggil RPC get_program_pontren_options. Mengambil opsi default.");
+      
+      const defaultOptions = await db
         .from("program_pontren_filter_options")
         .select("*")
-        .limit(1);
-
-      if (fallback.error) {
-        console.error(fallback.error);
-        return null;
+        .single();
+        
+      if (defaultOptions.error) {
+          console.error(defaultOptions.error);
+          setStatus("Gagal memuat opsi filter. Cek console.", false);
+          return;
       }
-      data = Array.isArray(fallback.data) ? fallback.data[0] : fallback.data;
+      data = defaultOptions.data;
     }
 
-    setOptions(els.profil, data?.profil);
-    setOptions(els.indikator, data?.indikator);
-    setOptions(els.pic, data?.pic);
-    setOptions(els.program, data?.program);
-    setOptions(els.penilaian, data?.penilaian);
+    setOptions(els.profil, data.profil);
+    setOptions(els.indikator, data.indikator);
+    setOptions(els.pic, data.pic);
+    setOptions(els.program, data.program);
+    setOptions(els.penilaian, data.penilaian);
 
-    return data;
+    setStatus("Siap.", false);
   }
-  // =========================================================================
-
+  
   function renderRows(rows) {
-    const n = rows?.length || 0;
-    els.count.textContent = String(n);
-
     if (!rows || rows.length === 0) {
-      els.tbody.innerHTML = `<tr><td colspan="5" class="muted">Tidak ada data yang cocok.</td></tr>`;
-      els.cards.innerHTML = `<div class="rowcard"><div class="muted">Tidak ada data yang cocok.</div></div>`;
+      els.tbody.innerHTML =
+        `<tr><td colspan="5" class="muted">Tidak ada data yang cocok.</td></tr>`;
+      els.count.textContent = "0";
       return;
     }
 
-    // Desktop table
-    els.tbody.innerHTML = rows
+    const html = rows
       .map((r) => {
-        const profilDef = `<b>${safeText(r.profil)}</b><br><span class="muted-small">(${safeText(r.definisi)})</span>`;
+        const safe = (x) =>
+          (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          
+        // Profil dan Definisi digabung
+        const profil_definisi = `<b>${safe(r.profil)}</b><br><span class="muted-small">(${safe(r.definisi)})</span>`;
+        
         return `
-          <tr>
-            <td>${profilDef}</td>
-            <td>${safeText(r.indikator)}</td>
-            <td>${safeText(r.pic)}</td>
-            <td>${safeText(r.program)}</td>
-            <td>${safeText(r.penilaian || "")}</td>
-          </tr>
-        `;
+        <tr>
+          <td>${profil_definisi}</td> 
+          <td>${safe(r.indikator)}</td>
+          <td>${safe(r.pic)}</td>
+          <td>${safe(r.program)}</td>
+          <td>${safe(r.penilaian || "")}</td>
+        </tr>`;
       })
       .join("");
 
-    // Mobile cards (revisi: badge pojok kanan atas DIHAPUS)
-    els.cards.innerHTML = rows
-      .map((r) => {
-        return `
-          <div class="rowcard">
-            <div class="top">
-              <div>
-                <div class="title">${safeText(r.profil)}</div>
-                <div class="def">(${safeText(r.definisi)})</div>
-              </div>
-            </div>
-
-            <div class="kv">
-              <div class="k">Indikator</div><div class="v">${safeText(r.indikator)}</div>
-              <div class="k">PIC</div><div class="v">${safeText(r.pic)}</div>
-              <div class="k">Program</div><div class="v">${safeText(r.program)}</div>
-              <div class="k">Penilaian</div><div class="v">${safeText(r.penilaian || "—")}</div>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
+    els.tbody.innerHTML = html;
+    els.count.textContent = String(rows.length);
   }
 
   async function fetchData() {
     const f = readFilters();
-    setStatus("Memuat opsi & data...", "load");
+    setStatus("Mengambil data...", true);
 
-    // 1) Load relevant filter options
-    const optOk = await loadFilterOptions(f);
-    if (optOk === null) {
-      setStatus("Gagal memuat opsi filter. Cek console.", "err");
-      renderRows([]);
-      return;
-    }
-
-    // 2) Query data utama
+    // 1. Ambil Opsi Filter yang Relevan
+    await loadFilterOptions(f); 
+    
+    // 2. Lakukan Query Data Utama
     let q = db
       .from("program_pontren")
       .select("id, profil, definisi, indikator, pic, program, penilaian")
       .order("profil", { ascending: true })
-      .order("indikator", { ascending: true });
+      .order("indikator", { ascending: true }); 
 
     if (f.profil) q = q.eq("profil", f.profil);
     if (f.indikator) q = q.eq("indikator", f.indikator);
     if (f.pic) q = q.eq("pic", f.pic);
     if (f.program) q = q.eq("program", f.program);
     if (f.penilaian) q = q.eq("penilaian", f.penilaian);
-
+    
+    // Server-Side Search (ilike)
     if (f.q) {
-      const like = `%${f.q}%`;
-      q = q.or(
-        `profil.ilike.${like},definisi.ilike.${like},indikator.ilike.${like},pic.ilike.${like},program.ilike.${like},penilaian.ilike.${like}`
-      );
+        const searchQuery = `%${f.q}%`;
+        q = q.or(
+            `profil.ilike.${searchQuery},definisi.ilike.${searchQuery},indikator.ilike.${searchQuery},pic.ilike.${searchQuery},program.ilike.${searchQuery},penilaian.ilike.${searchQuery}`
+        );
     }
 
     const { data, error } = await q;
 
     if (error) {
       console.error(error);
-      setStatus("Gagal ambil data. Cek console.", "err");
+      setStatus("Gagal ambil data. Cek console.", false);
       renderRows([]);
       return;
     }
 
     renderRows(data || []);
-    setStatus("Siap.", "ok");
+    setStatus("Selesai.", false);
   }
 
   function resetFilters() {
     els.profil.value = "";
-    els.indikator.value = "";
+    els.indikator.value = ""; 
     els.pic.value = "";
     els.program.value = "";
     els.penilaian.value = "";
@@ -233,14 +187,14 @@
 
   // Events
   els.btnApply.addEventListener("click", fetchData);
-
   els.q.addEventListener("keyup", (e) => {
-    if (e.key === "Enter") fetchData();
+    if (e.key === 'Enter') {
+        fetchData();
+    }
   });
-
   els.btnReset.addEventListener("click", async () => {
     resetFilters();
-    await fetchData();
+    await fetchData(); 
   });
 
   [els.profil, els.indikator, els.pic, els.program, els.penilaian].forEach((el) =>
@@ -249,13 +203,7 @@
 
   // Init
   (async function init() {
-    // Auto-collapse filter panel on small screens
-    try {
-      if (window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
-        els.filtersPanel.open = false;
-      }
-    } catch (_) {}
-
+    await loadFilterOptions(readFilters()); 
     await fetchData();
   })();
 })();
