@@ -1,87 +1,235 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Filter Program Pontren</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Filter Program Pontren Modern</title>
 
-  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Palet Warna Baru (Modern Dark) */
+    :root {
+      --bg: #0d1117; /* Latar belakang gelap */
+      --card: #161b22; /* Warna card/container */
+      --line: #30363d; /* Garis/border halus */
+      --text: #c9d1d9; /* Teks utama cerah */
+      --mut: #8b949e; /* Teks sekunder/muted */
+      --primary: #58a6ff; /* Warna aksi/tombol primer */
+      --input-bg: #010409; /* Latar belakang input lebih gelap */
+    }
+    
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary); /* Judul menonjol */
+    }
+    .sub {
+      color: var(--mut);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    /* Layout Filter */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 5 kolom filter */
+      gap: 12px;
+    }
+    @media (max-width: 1000px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: repeat(1, 1fr); } /* Satu kolom di Mobile */
+    }
+    
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--mut);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background-color: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus, input:focus {
+      border-color: var(--primary);
+    }
+    
+    /* Baris Aksi (Search, Button, Status) */
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end; /* Align ke bawah untuk tombol */
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 500px) {
+      .row { align-items: stretch; } /* Di mobile, tombol bisa memanjang */
+      .row > button, .row > .pill { width: 100%; justify-content: center; }
+    }
+    
+    button {
+      padding: 10px 18px;
+      border-radius: 6px;
+      border: none;
+      background-color: var(--primary);
+      color: var(--card); /* Teks tombol gelap */
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+    button:hover {
+      background-color: #388bfd;
+    }
+    button.secondary {
+      background: var(--line);
+      color: var(--text);
+    }
+    button.secondary:hover {
+      background-color: #444c56;
+    }
+    
+    .pill {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--mut);
+      font-size: 13px;
+    }
+    
+    /* Tabel */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 20px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      background-color: #010409; /* Header tabel lebih gelap */
+      color: var(--mut);
+      text-align: left;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02); /* Baris selang-seling */
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .muted{ color: var(--mut); }
+    .muted-small{ color: var(--mut); font-size: 11px; display: block; margin-top: 4px; }
+    .loading { opacity: 0.6; pointer-events: none; }
+    
+    /* Responsif Tabel (Horizontal Scroll di Mobile) */
+    .table-container {
+      overflow-x: auto;
+    }
+  </style>
 </head>
-
 <body>
-  <div class="wrap">
+  <div class="wrap">
+    <div class="card">
+      <h1>Filter Program Pontren</h1>
+      <div class="sub">Filter data program pesantren dan madrasah berbasis Supabase.</div>
 
-    <div class="hero">
-      <div>
-        <h1>Filter Program Pontren</h1>
-        <div class="sub">
-          Pilih filter → hasil otomatis tampil. Data diambil dari Supabase, disajikan nyaman untuk HP & desktop.
-        </div>
-      </div>
+      <div class="grid">
+        <div>
+          <label for="f_profil">PROFIL</label>
+          <select id="f_profil"><option value="">Semua</option></select>
+        </div>
+        <div>
+          <label for="f_indikator">INDIKATOR</label>
+          <select id="f_indikator"><option value="">Semua</option></select>
+        </div>
+        <div>
+          <label for="f_pic">PIC</label>
+          <select id="f_pic"><option value="">Semua</option></select>
+        </div>
+        <div>
+          <label for="f_program">PROGRAM</label>
+          <select id="f_program"><option value="">Semua</option></select>
+        </div>
+        <div>
+          <label for="f_penilaian">PENILAIAN</label>
+          <select id="f_penilaian"><option value="">Semua</option></select>
+        </div>
+      </div>
 
-      <div class="badges">
-        <span class="pill">Hasil: <b id="count">0</b></span>
-        <span class="pill" id="statusPill">
-          <span class="dot ok" id="statusDot"></span>
-          <span id="status">Siap.</span>
-        </span>
-      </div>
-    </div>
+      <div class="row">
+        <div style="flex:1;min-width:200px">
+          <label for="q">Pencarian bebas</label>
+          <input id="q" placeholder="Cari kata kunci di semua kolom..." />
+        </div>
+        <button id="btn_apply">Terapkan Filter</button>
+        <button class="secondary" id="btn_reset">Reset</button>
+        <span class="pill">Hasil: <b id="count">0</b> Data</span>
+        <span class="pill muted" id="status">Siap.</span>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:280px">PROFIL (DEFINISI)</th> 
+            <th style="min-width:180px">INDIKATOR</th>
+            <th style="min-width:140px">PIC</th>
+            <th style="min-width:250px">PROGRAM</th>
+            <th style="min-width:140px">PENILAIAN</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="5" class="muted">Belum ada data ditampilkan.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <div class="card">
-      <div class="section">
-        <details class="filters" id="filtersPanel" open>
-          <summary>
-            <div class="sum-left">
-              <div class="sum-title">Filter & Pencarian</div>
-              <div class="sum-sub">Rapikan hasil dengan profil, indikator, PIC, program, penilaian, atau kata kunci.</div>
-            </div>
-            <div class="chev" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </summary>
-
-          <div class="filters-body">
-            <div class="grid">
-              <div>
-                <label>PROFIL</label>
-                <select id="f_profil"><option value="">Semua</option></select>
-              </div>
-
-              <div>
-                <label>INDIKATOR</label>
-                <select id="f_indikator"><option value="">Semua</option></select>
-              </div>
-
-              <div>
-                <label>PIC</label>
-                <select id="f_pic"><option value="">Semua</option></select>
-              </div>
-
-              <div>
-                <label>PROGRAM</label>
-                <select id="f_program"><option value="">Semua</option></select>
-              </div>
-
-              <div>
-                <label>PENILAIAN</label>
-                <select id="f_penilaian"><option value="">Semua</option></select>
-              </div>
-            </div>
-
-            <div class="actions">
-              <div class="grow">
-                <label>Pencarian bebas (opsional)</label>
-                <input id="q" placeholder="ketik kata kunci (mis. halaqah / literasi / LDKS)..." />
-              </div>
-
-              <button class="btn" id="btn_apply">Terapkan</button>
-              <button class="btn secondary" id="btn_reset">Reset</button>
-
-              <!-- Revisi: tips pindah ke baris bawah -->
-              <div class="hint hint-below">Tips: tekan <b>Enter</b> di kolom pencar
+  <script src="./app.js"></script>
+</body>
+</html>
