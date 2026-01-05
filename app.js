@@ -1,15 +1,12 @@
 (function () {
   const { createClient } = supabase;
 
+  // ✅ PAKAI KEY ASLI (jangan ubah 1 huruf pun)
   const SUPABASE_URL = "https://unhacmkhjawhoizdctdk.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
 
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  if (!window.supabase) {
-    console.error("Supabase SDK belum termuat. Cek tag CDN supabase-js.");
-  }
-  console.log("Supabase URL:", SUPABASE_URL);
 
   const els = {
     profil: document.getElementById("f_profil"),
@@ -53,23 +50,25 @@
   function setOptions(selectEl, items) {
     const currentValue = selectEl.value;
 
-    // Rebuild safely
     selectEl.innerHTML = "";
     const optAll = document.createElement("option");
     optAll.value = "";
     optAll.textContent = "Semua";
     selectEl.appendChild(optAll);
 
-    const arr = (items || []).filter((v) => v != null && String(v).trim() !== "");
-    arr.forEach((v) => {
+    const arr = (items || [])
+      .filter((v) => v != null && String(v).trim() !== "")
+      .map((v) => String(v));
+
+    for (const v of arr) {
       const opt = document.createElement("option");
-      opt.value = String(v);
-      opt.textContent = String(v);
+      opt.value = v;
+      opt.textContent = v;
       selectEl.appendChild(opt);
-    });
+    }
 
     // Keep selection if still exists
-    const exists = arr.some((v) => String(v) === currentValue);
+    const exists = arr.some((v) => v === currentValue);
     selectEl.value = exists ? currentValue : "";
   }
 
@@ -85,39 +84,37 @@
   }
 
   // =========================================================================
-  // Load cascading filter options (RPC with fallback)
+  // Load cascading filter options (RPC with fallback) - dibuat lebih tahan banting
   // =========================================================================
   async function loadFilterOptions(currentFilters) {
     const { profil, indikator, pic, program, penilaian } = currentFilters;
 
     let data = null;
 
-    // Coba RPC dulu
-    const rpcRes = await db
-      .rpc("get_program_pontren_options", {
-        profil_filter: profil || null,
-        indikator_filter: indikator || null,
-        pic_filter: pic || null,
-        program_filter: program || null,
-        penilaian_filter: penilaian || null,
-      })
-      .single();
+    // RPC (tanpa .single supaya aman jika function mengembalikan array 1 row)
+    const rpcRes = await db.rpc("get_program_pontren_options", {
+      profil_filter: profil || null,
+      indikator_filter: indikator || null,
+      pic_filter: pic || null,
+      program_filter: program || null,
+      penilaian_filter: penilaian || null,
+    });
 
     if (!rpcRes.error) {
-      data = rpcRes.data;
+      data = Array.isArray(rpcRes.data) ? rpcRes.data[0] : rpcRes.data;
     } else {
       console.warn("RPC get_program_pontren_options gagal, fallback ke tabel opsi:", rpcRes.error);
 
       const fallback = await db
         .from("program_pontren_filter_options")
         .select("*")
-        .single();
+        .limit(1);
 
       if (fallback.error) {
         console.error(fallback.error);
         return null;
       }
-      data = fallback.data;
+      data = Array.isArray(fallback.data) ? fallback.data[0] : fallback.data;
     }
 
     setOptions(els.profil, data?.profil);
@@ -134,7 +131,6 @@
     const n = rows?.length || 0;
     els.count.textContent = String(n);
 
-    // Empty states
     if (!rows || rows.length === 0) {
       els.tbody.innerHTML = `<tr><td colspan="5" class="muted">Tidak ada data yang cocok.</td></tr>`;
       els.cards.innerHTML = `<div class="rowcard"><div class="muted">Tidak ada data yang cocok.</div></div>`;
@@ -157,7 +153,7 @@
       })
       .join("");
 
-    // Mobile cards
+    // Mobile cards (revisi: badge pojok kanan atas DIHAPUS)
     els.cards.innerHTML = rows
       .map((r) => {
         return `
@@ -167,13 +163,13 @@
                 <div class="title">${safeText(r.profil)}</div>
                 <div class="def">(${safeText(r.definisi)})</div>
               </div>
-              <span class="tag">${safeText(r.penilaian || "—")}</span>
             </div>
 
             <div class="kv">
               <div class="k">Indikator</div><div class="v">${safeText(r.indikator)}</div>
               <div class="k">PIC</div><div class="v">${safeText(r.pic)}</div>
               <div class="k">Program</div><div class="v">${safeText(r.program)}</div>
+              <div class="k">Penilaian</div><div class="v">${safeText(r.penilaian || "—")}</div>
             </div>
           </div>
         `;
@@ -224,9 +220,6 @@
 
     renderRows(data || []);
     setStatus("Siap.", "ok");
-
-    // UX: di mobile, saat user apply manual, biarkan panel filter menutup biar hasil terlihat
-    // (tapi jangan memaksa jika user memang ingin tetap open)
   }
 
   function resetFilters() {
