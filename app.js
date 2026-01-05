@@ -1,209 +1,265 @@
 (function () {
   const { createClient } = supabase;
 
-  // ✅ GANTI INI
+  // KONFIGURASI SUPABASE
   const SUPABASE_URL = "https://unhacmkhjawhoizdctdk.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaGFjbWtoamF3aG9pemRjdGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MjczOTMsImV4cCI6MjA4MTQwMzM5M30.oKIm1s9gwotCeZVvS28vOCLddhIN9lopjG-YeaULMtk";
 
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Elements
   const els = {
     profil: document.getElementById("f_profil"),
     indikator: document.getElementById("f_indikator"),
-    pic: document.getElementById("f_pic"),
     program: document.getElementById("f_program"),
     penilaian: document.getElementById("f_penilaian"),
+    tahapan: document.getElementById("f_tahapan"),
+    pic: document.getElementById("f_pic"),
     q: document.getElementById("q"),
     btnApply: document.getElementById("btn_apply"),
     btnReset: document.getElementById("btn_reset"),
     tbody: document.getElementById("tbody"),
+    cards: document.getElementById("cards"),
     count: document.getElementById("count"),
     status: document.getElementById("status"),
+    statusDot: document.getElementById("statusDot"),
+    filtersPanel: document.getElementById("filtersPanel"),
+    fileExcel: document.getElementById("fileExcel"), // Input file baru
   };
 
-  function setStatus(msg, loading = false) {
+  function safeText(x) {
+    return (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function setStatus(msg, state = "ok") {
     els.status.textContent = msg;
-    document.body.classList.toggle("loading", loading);
+    els.statusDot.className = "dot " + state;
+    const loading = state === "load";
+    [els.btnApply, els.btnReset].forEach(b => b.disabled = loading);
+    els.btnApply.style.opacity = loading ? "0.7" : "1";
+    document.body.style.cursor = loading ? "wait" : "default";
   }
 
   function setOptions(selectEl, items) {
-    const currentValue = selectEl.value;
-    const keep = selectEl.options[0]; // "Semua"
-    selectEl.innerHTML = "";
-    selectEl.appendChild(keep);
-    
-    let valueFound = false;
-
-    (items || []).forEach((v) => {
+    if (!selectEl) return;
+    const current = selectEl.value;
+    selectEl.innerHTML = '<option value="">Semua</option>';
+    const arr = (items || []).filter(v => v != null && String(v).trim() !== "");
+    arr.forEach(v => {
       const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
+      opt.value = String(v);
+      opt.textContent = String(v);
       selectEl.appendChild(opt);
-      if (v === currentValue) {
-        valueFound = true;
-      }
     });
-
-    if (valueFound) {
-      selectEl.value = currentValue;
-    } else {
-      selectEl.value = ""; 
-    }
+    if (arr.some(v => String(v) === current)) selectEl.value = current;
   }
 
   function readFilters() {
     return {
       profil: els.profil.value.trim(),
       indikator: els.indikator.value.trim(),
-      pic: els.pic.value.trim(),
       program: els.program.value.trim(),
       penilaian: els.penilaian.value.trim(),
+      tahapan: els.tahapan.value.trim(),
+      pic: els.pic.value.trim(),
       q: els.q.value.trim().toLowerCase(),
     };
   }
-  
+
   async function loadFilterOptions(currentFilters) {
-    setStatus("Memuat opsi filter relevan...", true);
+    const f = currentFilters;
+    const { data, error } = await db.rpc("get_program_pontren_options", {
+        profil_filter: f.profil || null,
+        indikator_filter: f.indikator || null,
+        pic_filter: f.pic || null,
+        program_filter: f.program || null,
+        penilaian_filter: f.penilaian || null,
+    }).single();
 
-    const { profil, indikator, pic, program, penilaian } = currentFilters;
-
-    // Asumsi RPC Supabase 'get_program_pontren_options' sudah dibuat
-    
-    const { data, error } = await db
-      .rpc('get_program_pontren_options', { 
-        profil_filter: profil || null, 
-        indikator_filter: indikator || null, 
-        pic_filter: pic || null, 
-        program_filter: program || null,
-        penilaian_filter: penilaian || null 
-      })
-      .single(); 
-
-    if (error) {
-      console.warn("Gagal memanggil RPC get_program_pontren_options. Mengambil opsi default.");
-      
-      const defaultOptions = await db
-        .from("program_pontren_filter_options")
-        .select("*")
-        .single();
-        
-      if (defaultOptions.error) {
-          console.error(defaultOptions.error);
-          setStatus("Gagal memuat opsi filter. Cek console.", false);
-          return;
-      }
-      data = defaultOptions.data;
+    if (!error && data) {
+        setOptions(els.profil, data.profil);
+        setOptions(els.indikator, data.indikator);
+        setOptions(els.program, data.program);
+        setOptions(els.penilaian, data.penilaian);
+        setOptions(els.pic, data.pic);
+        if(data.tahapan) setOptions(els.tahapan, data.tahapan);
+        return;
     }
 
-    setOptions(els.profil, data.profil);
-    setOptions(els.indikator, data.indikator);
-    setOptions(els.pic, data.pic);
-    setOptions(els.program, data.program);
-    setOptions(els.penilaian, data.penilaian);
-
-    setStatus("Siap.", false);
+    // Fallback if RPC not updated yet
+    const fallback = await db.from("program_pontren_filter_options").select("*").single();
+    if (fallback.data) {
+        const d = fallback.data;
+        setOptions(els.profil, d.profil);
+        setOptions(els.indikator, d.indikator);
+        setOptions(els.program, d.program);
+        setOptions(els.penilaian, d.penilaian);
+        setOptions(els.pic, d.pic);
+        setOptions(els.tahapan, d.tahapan);
+    }
   }
-  
+
   function renderRows(rows) {
-    if (!rows || rows.length === 0) {
-      els.tbody.innerHTML =
-        `<tr><td colspan="5" class="muted">Tidak ada data yang cocok.</td></tr>`;
-      els.count.textContent = "0";
+    els.count.textContent = String(rows?.length || 0);
+    const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
+
+    if (!rows || !rows.length) {
+      els.tbody.innerHTML = `<tr><td colspan="6">${empty}</td></tr>`;
+      els.cards.innerHTML = empty;
       return;
     }
 
-    const html = rows
-      .map((r) => {
-        const safe = (x) =>
-          (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          
-        // Profil dan Definisi digabung
-        const profil_definisi = `<b>${safe(r.profil)}</b><br><span class="muted-small">(${safe(r.definisi)})</span>`;
-        
-        return `
-        <tr>
-          <td>${profil_definisi}</td> 
-          <td>${safe(r.indikator)}</td>
-          <td>${safe(r.pic)}</td>
-          <td>${safe(r.program)}</td>
-          <td>${safe(r.penilaian || "")}</td>
-        </tr>`;
-      })
-      .join("");
+    els.tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>
+          <span class="cell-profil">${safeText(r.profil)}</span>
+          <span class="cell-def">${safeText(r.definisi)}</span>
+        </td>
+        <td>${safeText(r.indikator)}</td>
+        <td>${safeText(r.program)}</td>
+        <td>${safeText(r.penilaian || "-")}</td>
+        <td>${r.tahapan ? `<span class="tag-tahap">${safeText(r.tahapan)}</span>` : "-"}</td>
+        <td><span class="tag-pic">${safeText(r.pic)}</span></td>
+      </tr>
+    `).join("");
 
-    els.tbody.innerHTML = html;
-    els.count.textContent = String(rows.length);
+    els.cards.innerHTML = rows.map(r => `
+      <div class="m-card">
+        <div class="m-header">
+          <div class="m-title">${safeText(r.profil)}</div>
+          <div class="m-sub">${safeText(r.definisi)}</div>
+        </div>
+        <div class="m-row"><div class="m-label">Indikator</div><div>${safeText(r.indikator)}</div></div>
+        <div class="m-row"><div class="m-label">Program</div><div>${safeText(r.program)}</div></div>
+        <div class="m-row"><div class="m-label">Penilaian</div><div>${safeText(r.penilaian || "-")}</div></div>
+        <div class="m-row"><div class="m-label">Tahapan</div><div>${r.tahapan ? `<b>${safeText(r.tahapan)}</b>` : "-"}</div></div>
+        <div class="m-row"><div class="m-label">PIC</div><div>${safeText(r.pic)}</div></div>
+      </div>
+    `).join("");
   }
 
   async function fetchData() {
     const f = readFilters();
-    setStatus("Mengambil data...", true);
+    setStatus("Syncing...", "load");
 
-    // 1. Ambil Opsi Filter yang Relevan
-    await loadFilterOptions(f); 
-    
-    // 2. Lakukan Query Data Utama
-    let q = db
-      .from("program_pontren")
-      .select("id, profil, definisi, indikator, pic, program, penilaian")
-      .order("profil", { ascending: true })
-      .order("indikator", { ascending: true }); 
+    await loadFilterOptions(f);
+
+    let q = db.from("program_pontren")
+      .select("id, profil, definisi, indikator, pic, program, penilaian, tahapan")
+      .order("profil", { ascending: true });
 
     if (f.profil) q = q.eq("profil", f.profil);
     if (f.indikator) q = q.eq("indikator", f.indikator);
-    if (f.pic) q = q.eq("pic", f.pic);
     if (f.program) q = q.eq("program", f.program);
     if (f.penilaian) q = q.eq("penilaian", f.penilaian);
-    
-    // Server-Side Search (ilike)
+    if (f.tahapan) q = q.eq("tahapan", f.tahapan);
+    if (f.pic) q = q.eq("pic", f.pic);
+
     if (f.q) {
-        const searchQuery = `%${f.q}%`;
-        q = q.or(
-            `profil.ilike.${searchQuery},definisi.ilike.${searchQuery},indikator.ilike.${searchQuery},pic.ilike.${searchQuery},program.ilike.${searchQuery},penilaian.ilike.${searchQuery}`
-        );
+      const like = `%${f.q}%`;
+      q = q.or(`profil.ilike.${like},definisi.ilike.${like},program.ilike.${like},tahapan.ilike.${like},pic.ilike.${like}`);
     }
 
     const { data, error } = await q;
-
+    
     if (error) {
       console.error(error);
-      setStatus("Gagal ambil data. Cek console.", false);
-      renderRows([]);
-      return;
+      setStatus("Error", "err");
+    } else {
+      renderRows(data || []);
+      setStatus("Ready", "ok");
     }
-
-    renderRows(data || []);
-    setStatus("Selesai.", false);
   }
 
   function resetFilters() {
-    els.profil.value = "";
-    els.indikator.value = ""; 
-    els.pic.value = "";
-    els.program.value = "";
-    els.penilaian.value = "";
-    els.q.value = "";
+    els.profil.value = ""; els.indikator.value = ""; els.program.value = "";
+    els.penilaian.value = ""; els.tahapan.value = ""; els.pic.value = ""; els.q.value = "";
   }
 
+  // ==========================================
+  // LOGIKA IMPORT EXCEL
+  // ==========================================
+  els.fileExcel.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm(`Upload file "${file.name}" ke database? Pastikan format kolom sesuai.`)) {
+      els.fileExcel.value = ""; // reset
+      return;
+    }
+
+    setStatus("Reading Excel...", "load");
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // Convert ke JSON
+      const rawData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (rawData.length === 0) {
+        alert("File Excel kosong atau format salah.");
+        setStatus("Ready", "ok");
+        return;
+      }
+
+      // Map Kolom Excel ke Kolom Supabase
+      // Sesuaikan 'key' di kiri dengan Header di Excel Anda
+      const dbData = rawData.map(row => ({
+        profil: row['Profil'] || row['profil'] || '',
+        definisi: row['Definisi'] || row['definisi'] || '',
+        indikator: row['Indikator'] || row['indikator'] || '',
+        program: row['Program'] || row['program'] || '',
+        penilaian: row['Penilaian'] || row['penilaian'] || null,
+        tahapan: row['Tahapan'] || row['tahapan'] || null,
+        pic: row['PIC'] || row['pic'] || row['Pic'] || ''
+      }));
+
+      setStatus(`Uploading ${dbData.length} rows...`, "load");
+
+      // Insert ke Supabase
+      const { error } = await db.from("program_pontren").insert(dbData);
+
+      if (error) throw error;
+
+      alert(`Berhasil import ${dbData.length} data baru!`);
+      els.fileExcel.value = "";
+      await fetchData(); // Refresh table
+
+    } catch (err) {
+      console.error(err);
+      alert("Gagal import: " + err.message);
+      setStatus("Error Import", "err");
+    }
+  });
+
   // Events
-  els.btnApply.addEventListener("click", fetchData);
+  els.btnApply.addEventListener("click", () => {
+    if (window.innerWidth < 1024) els.filtersPanel.open = false;
+    fetchData();
+  });
+  
   els.q.addEventListener("keyup", (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
+        if (window.innerWidth < 1024) els.filtersPanel.open = false;
         fetchData();
     }
   });
+
   els.btnReset.addEventListener("click", async () => {
     resetFilters();
-    await fetchData(); 
+    await fetchData();
   });
 
-  [els.profil, els.indikator, els.pic, els.program, els.penilaian].forEach((el) =>
-    el.addEventListener("change", fetchData)
+  [els.profil, els.indikator, els.program, els.penilaian, els.tahapan, els.pic].forEach(el => 
+    el && el.addEventListener("change", fetchData)
   );
 
-  // Init
   (async function init() {
-    await loadFilterOptions(readFilters()); 
+    if (window.innerWidth < 1024) els.filtersPanel.open = false;
     await fetchData();
   })();
 })();
