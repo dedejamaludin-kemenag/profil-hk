@@ -55,7 +55,7 @@
         radial-gradient(at 100% 100%, rgba(62, 207, 142, 0.05) 0px, transparent 50%);
       background-attachment: fixed;
       min-height: 100vh;
-      font-size: 16px; /* BASE FONT DIPERBESAR */
+      font-size: 16px;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -80,7 +80,7 @@
     }
     .brand h1 {
       margin: 0;
-      font-size: 32px; /* JUDUL BESAR */
+      font-size: 32px;
       font-weight: 800;
       letter-spacing: -0.5px;
       background: linear-gradient(to right, #fff, #3ecf8e);
@@ -172,7 +172,7 @@
 
     .form-group label {
       display: block;
-      font-size: 13px; /* LABEL DIPERBESAR */
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -182,15 +182,14 @@
 
     .input-wrapper { position: relative; }
     
-    /* INPUT & SELECT DIPERBESAR */
     select, input {
       width: 100%;
       background: var(--bg-input);
       border: 1px solid var(--border);
       color: var(--text-main);
-      padding: 14px 16px; /* Padding lebih tebal */
+      padding: 14px 16px;
       border-radius: var(--radius-sm);
-      font-size: 16px; /* Font size standar 16px (sama dgn placeholder) */
+      font-size: 16px;
       font-family: inherit;
       transition: all 0.2s;
       appearance: none;
@@ -200,7 +199,6 @@
     select:hover, input:hover { border-color: var(--border-light); }
     select:focus, input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(62,207,142,0.1); }
 
-    /* Panah Dropdown */
     .select-arrow {
       position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
       pointer-events: none; color: var(--text-dim); font-size: 18px;
@@ -211,11 +209,10 @@
     }
     .search-box { flex-grow: 1; min-width: 250px; }
 
-    /* TOMBOL APPLY/RESET DIPERBESAR */
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 10px;
       padding: 14px 24px; border-radius: var(--radius-sm); font-weight: 600; font-size: 16px;
-      cursor: pointer; transition: all 0.2s; height: 54px; /* Tinggi disamakan dengan input */
+      cursor: pointer; transition: all 0.2s; height: 54px;
       border: 1px solid transparent;
     }
     .btn-primary { background: var(--primary); color: #000; }
@@ -253,10 +250,6 @@
     .cell-def { font-size: 15px; color: var(--text-dim); }
     
     .tag-pic { background: #333; padding: 4px 10px; border-radius: 6px; font-size: 14px; color: #ccc; }
-    .tag-tahap { 
-      background: rgba(62, 207, 142, 0.1); color: var(--primary); 
-      padding: 4px 10px; border-radius: 6px; font-size: 14px; font-weight: 600; white-space: nowrap;
-    }
 
     /* MOBILE CARDS */
     .cards-container { display: none; padding: 20px; flex-direction: column; gap: 16px; }
@@ -271,7 +264,7 @@
     @media (max-width: 1024px) {
       .table-responsive { display: none; }
       .cards-container { display: flex; }
-      .grid-filters { grid-template-columns: 1fr; } /* Mobile 1 Kolom */
+      .grid-filters { grid-template-columns: 1fr; } 
       .action-bar { flex-direction: column; align-items: stretch; }
       .btn { width: 100%; }
       .header-actions { width: 100%; justify-content: space-between; margin-top: 12px; }
