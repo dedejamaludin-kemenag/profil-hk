@@ -8,7 +8,7 @@
 
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Elements
+  // Cache Element DOM
   const els = {
     profil: document.getElementById("f_profil"),
     indikator: document.getElementById("f_indikator"),
@@ -25,7 +25,7 @@
     status: document.getElementById("status"),
     statusDot: document.getElementById("statusDot"),
     filtersPanel: document.getElementById("filtersPanel"),
-    fileExcel: document.getElementById("fileExcel"), // Input file baru
+    fileExcel: document.getElementById("fileExcel"),
   };
 
   function safeText(x) {
@@ -67,8 +67,10 @@
     };
   }
 
+  // 1. Load Filter Options (RPC / Table)
   async function loadFilterOptions(currentFilters) {
     const f = currentFilters;
+    // Coba load via RPC
     const { data, error } = await db.rpc("get_program_pontren_options", {
         profil_filter: f.profil || null,
         indikator_filter: f.indikator || null,
@@ -87,7 +89,7 @@
         return;
     }
 
-    // Fallback if RPC not updated yet
+    // Fallback: View biasa
     const fallback = await db.from("program_pontren_filter_options").select("*").single();
     if (fallback.data) {
         const d = fallback.data;
@@ -100,6 +102,7 @@
     }
   }
 
+  // 2. Render Data
   function renderRows(rows) {
     els.count.textContent = String(rows?.length || 0);
     const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
@@ -110,6 +113,7 @@
       return;
     }
 
+    // UPDATE: Kolom Tahapan sekarang dirender polos (safeText saja)
     els.tbody.innerHTML = rows.map(r => `
       <tr>
         <td>
@@ -119,11 +123,12 @@
         <td>${safeText(r.indikator)}</td>
         <td>${safeText(r.program)}</td>
         <td>${safeText(r.penilaian || "-")}</td>
-        <td>${r.tahapan ? `<span class="tag-tahap">${safeText(r.tahapan)}</span>` : "-"}</td>
+        <td>${safeText(r.tahapan || "-")}</td>
         <td><span class="tag-pic">${safeText(r.pic)}</span></td>
       </tr>
     `).join("");
 
+    // UPDATE MOBILE: Tahapan juga tidak dibold
     els.cards.innerHTML = rows.map(r => `
       <div class="m-card">
         <div class="m-header">
@@ -133,12 +138,13 @@
         <div class="m-row"><div class="m-label">Indikator</div><div>${safeText(r.indikator)}</div></div>
         <div class="m-row"><div class="m-label">Program</div><div>${safeText(r.program)}</div></div>
         <div class="m-row"><div class="m-label">Penilaian</div><div>${safeText(r.penilaian || "-")}</div></div>
-        <div class="m-row"><div class="m-label">Tahapan</div><div>${r.tahapan ? `<b>${safeText(r.tahapan)}</b>` : "-"}</div></div>
+        <div class="m-row"><div class="m-label">Tahapan</div><div>${safeText(r.tahapan || "-")}</div></div>
         <div class="m-row"><div class="m-label">PIC</div><div>${safeText(r.pic)}</div></div>
       </div>
     `).join("");
   }
 
+  // 3. Fetch Core Data
   async function fetchData() {
     const f = readFilters();
     setStatus("Syncing...", "load");
@@ -165,7 +171,7 @@
     
     if (error) {
       console.error(error);
-      setStatus("Error", "err");
+      setStatus("Error mengambil data", "err");
     } else {
       renderRows(data || []);
       setStatus("Ready", "ok");
@@ -178,14 +184,14 @@
   }
 
   // ==========================================
-  // LOGIKA IMPORT EXCEL
+  // EXCEL IMPORT LOGIC
   // ==========================================
   els.fileExcel.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!confirm(`Upload file "${file.name}" ke database? Pastikan format kolom sesuai.`)) {
-      els.fileExcel.value = ""; // reset
+    if (!confirm(`Import data dari file "${file.name}"?`)) {
+      els.fileExcel.value = ""; 
       return;
     }
 
@@ -194,20 +200,12 @@
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      
-      // Convert ke JSON
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData = XLSX.utils.sheet_to_json(worksheet);
 
-      if (rawData.length === 0) {
-        alert("File Excel kosong atau format salah.");
-        setStatus("Ready", "ok");
-        return;
-      }
+      if (!rawData.length) throw new Error("File kosong");
 
-      // Map Kolom Excel ke Kolom Supabase
-      // Sesuaikan 'key' di kiri dengan Header di Excel Anda
+      // Mapping Kolom Excel -> Supabase
       const dbData = rawData.map(row => ({
         profil: row['Profil'] || row['profil'] || '',
         definisi: row['Definisi'] || row['definisi'] || '',
@@ -215,23 +213,22 @@
         program: row['Program'] || row['program'] || '',
         penilaian: row['Penilaian'] || row['penilaian'] || null,
         tahapan: row['Tahapan'] || row['tahapan'] || null,
-        pic: row['PIC'] || row['pic'] || row['Pic'] || ''
+        pic: row['PIC'] || row['pic'] || ''
       }));
 
       setStatus(`Uploading ${dbData.length} rows...`, "load");
 
-      // Insert ke Supabase
       const { error } = await db.from("program_pontren").insert(dbData);
 
       if (error) throw error;
 
-      alert(`Berhasil import ${dbData.length} data baru!`);
+      alert("Sukses import data!");
       els.fileExcel.value = "";
-      await fetchData(); // Refresh table
+      await fetchData();
 
     } catch (err) {
       console.error(err);
-      alert("Gagal import: " + err.message);
+      alert("Gagal Import: " + err.message + "\n(Cek console/RLS Policy)");
       setStatus("Error Import", "err");
     }
   });
