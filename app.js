@@ -34,6 +34,7 @@
     btnCloseModal: document.getElementById("btnCloseModal"),
     btnCancelEdit: document.getElementById("btnCancelEdit"),
     btnSaveEdit: document.getElementById("btnSaveEdit"),
+    btnDeleteData: document.getElementById("btnDeleteData"), // NEW BUTTON
     e_id: document.getElementById("e_id"),
     e_profil: document.getElementById("e_profil"),
     e_definisi: document.getElementById("e_definisi"),
@@ -44,8 +45,7 @@
     e_pic: document.getElementById("e_pic"),
   };
 
-  // State
-  let allRowsData = []; // Menyimpan data yang sedang tampil untuk referensi klik
+  let allRowsData = []; 
 
   function safeText(x) {
     return (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -104,6 +104,7 @@
     els.modal.classList.remove("open");
   }
 
+  // LOGIKA SIMPAN EDIT
   async function saveChanges() {
     const id = els.e_id.value;
     if (!id) return;
@@ -132,7 +133,29 @@
     } else {
       closeEditModal();
       alert("Data berhasil diperbarui!");
-      await fetchData(); // Refresh data
+      await fetchData(); 
+    }
+  }
+
+  // LOGIKA HAPUS DATA
+  async function deleteData() {
+    const id = els.e_id.value;
+    if (!id) return;
+
+    if (!confirm("PERINGATAN: Apakah Anda yakin ingin MENGHAPUS data ini secara permanen?")) return;
+
+    setStatus("Menghapus...", "load");
+
+    const { error } = await db.from("program_pontren").delete().eq("id", id);
+
+    if (error) {
+      console.error(error);
+      alert("Gagal menghapus: " + error.message);
+      setStatus("Gagal Hapus", "err");
+    } else {
+      closeEditModal();
+      alert("Data berhasil dihapus.");
+      await fetchData(); 
     }
   }
 
@@ -140,8 +163,8 @@
   els.btnCloseModal.addEventListener("click", closeEditModal);
   els.btnCancelEdit.addEventListener("click", closeEditModal);
   els.btnSaveEdit.addEventListener("click", saveChanges);
+  els.btnDeleteData.addEventListener("click", deleteData); // Listener Hapus
   
-  // Close modal when clicking outside
   els.modal.addEventListener("click", (e) => {
     if (e.target === els.modal) closeEditModal();
   });
@@ -182,7 +205,7 @@
   }
 
   function renderRows(rows) {
-    allRowsData = rows || []; // Simpan referensi data global
+    allRowsData = rows || []; 
     els.count.textContent = String(rows?.length || 0);
     
     const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
@@ -193,8 +216,6 @@
       return;
     }
 
-    // Render Table (Desktop)
-    // Kita tambahkan data-index agar tahu baris mana yang diklik
     els.tbody.innerHTML = rows.map((r, i) => `
       <tr data-index="${i}">
         <td>
@@ -209,7 +230,6 @@
       </tr>
     `).join("");
 
-    // Render Cards (Mobile)
     els.cards.innerHTML = rows.map((r, i) => `
       <div class="m-card" data-index="${i}">
         <div class="m-header">
@@ -224,7 +244,6 @@
       </div>
     `).join("");
 
-    // Tambahkan Event Listener ke setiap baris & kartu yang baru dibuat
     document.querySelectorAll('tr[data-index]').forEach(row => {
       row.addEventListener('click', () => {
         const idx = row.getAttribute('data-index');
@@ -278,12 +297,14 @@
     els.penilaian.value = ""; els.tahapan.value = ""; els.pic.value = ""; els.q.value = "";
   }
 
-  // IMPORT EXCEL
+  // ==========================================
+  // EXCEL IMPORT LOGIC (UPDATED: UPSERT)
+  // ==========================================
   els.fileExcel.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!confirm(`Import data dari file "${file.name}"?`)) {
+    if (!confirm(`Import data dari file "${file.name}"? Data duplikat akan diabaikan.`)) {
       els.fileExcel.value = ""; 
       return;
     }
@@ -298,29 +319,36 @@
 
       if (!rawData.length) throw new Error("File kosong");
 
+      // Mapping Kolom Excel -> Supabase
+      // PENTING: Gunakan string kosong '' jika null/undefined agar Unique Index SQL bekerja
       const dbData = rawData.map(row => ({
-        profil: row['Profil'] || row['profil'] || '',
-        definisi: row['Definisi'] || row['definisi'] || '',
-        indikator: row['Indikator'] || row['indikator'] || '',
-        program: row['Program'] || row['program'] || '',
-        penilaian: row['Penilaian'] || row['penilaian'] || null,
-        tahapan: row['Tahapan'] || row['tahapan'] || null,
-        pic: row['PIC'] || row['pic'] || ''
+        profil: (row['Profil'] || row['profil'] || '').trim(),
+        definisi: (row['Definisi'] || row['definisi'] || '').trim(),
+        indikator: (row['Indikator'] || row['indikator'] || '').trim(),
+        program: (row['Program'] || row['program'] || '').trim(),
+        penilaian: (row['Penilaian'] || row['penilaian'] || '').trim(),
+        tahapan: (row['Tahapan'] || row['tahapan'] || '').trim(),
+        pic: (row['PIC'] || row['pic'] || '').trim()
       }));
 
-      setStatus(`Uploading ${dbData.length} rows...`, "load");
+      setStatus(`Processing ${dbData.length} rows...`, "load");
 
-      const { error } = await db.from("program_pontren").insert(dbData);
+      // UPSERT: Insert or Update (Ignore Duplicate)
+      // ignoreDuplicates: true berarti jika kena unique constraint, biarkan saja (jangan insert, jangan error)
+      const { error } = await db.from("program_pontren").upsert(dbData, { 
+        onConflict: 'profil,definisi,indikator,program,penilaian,tahapan,pic', 
+        ignoreDuplicates: true 
+      });
 
       if (error) throw error;
 
-      alert("Sukses import data!");
+      alert("Sukses import! Data duplikat telah dilewati.");
       els.fileExcel.value = "";
       await fetchData();
 
     } catch (err) {
       console.error(err);
-      alert("Gagal Import: " + err.message + "\n(Cek console/RLS Policy)");
+      alert("Gagal Import: " + err.message + "\n(Pastikan SQL Index sudah dibuat)");
       setStatus("Error Import", "err");
     }
   });
