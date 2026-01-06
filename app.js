@@ -34,7 +34,7 @@
     btnCloseModal: document.getElementById("btnCloseModal"),
     btnCancelEdit: document.getElementById("btnCancelEdit"),
     btnSaveEdit: document.getElementById("btnSaveEdit"),
-    btnDeleteData: document.getElementById("btnDeleteData"), // NEW BUTTON
+    btnDeleteData: document.getElementById("btnDeleteData"),
     e_id: document.getElementById("e_id"),
     e_profil: document.getElementById("e_profil"),
     e_definisi: document.getElementById("e_definisi"),
@@ -96,7 +96,6 @@
     els.e_penilaian.value = row.penilaian || "";
     els.e_tahapan.value = row.tahapan || "";
     els.e_pic.value = row.pic || "";
-    
     els.modal.classList.add("open");
   }
 
@@ -104,13 +103,10 @@
     els.modal.classList.remove("open");
   }
 
-  // LOGIKA SIMPAN EDIT
   async function saveChanges() {
     const id = els.e_id.value;
     if (!id) return;
-
     if (!confirm("Simpan perubahan data ini?")) return;
-
     setStatus("Menyimpan...", "load");
 
     const updates = {
@@ -125,7 +121,6 @@
     };
 
     const { error } = await db.from("program_pontren").update(updates).eq("id", id);
-
     if (error) {
       console.error(error);
       alert("Gagal menyimpan: " + error.message);
@@ -137,17 +132,13 @@
     }
   }
 
-  // LOGIKA HAPUS DATA
   async function deleteData() {
     const id = els.e_id.value;
     if (!id) return;
-
-    if (!confirm("PERINGATAN: Apakah Anda yakin ingin MENGHAPUS data ini secara permanen?")) return;
-
+    if (!confirm("PERINGATAN: Hapus permanen data ini?")) return;
     setStatus("Menghapus...", "load");
 
     const { error } = await db.from("program_pontren").delete().eq("id", id);
-
     if (error) {
       console.error(error);
       alert("Gagal menghapus: " + error.message);
@@ -159,19 +150,15 @@
     }
   }
 
-  // Event Listener Modal
   els.btnCloseModal.addEventListener("click", closeEditModal);
   els.btnCancelEdit.addEventListener("click", closeEditModal);
   els.btnSaveEdit.addEventListener("click", saveChanges);
-  els.btnDeleteData.addEventListener("click", deleteData); // Listener Hapus
-  
+  els.btnDeleteData.addEventListener("click", deleteData);
   els.modal.addEventListener("click", (e) => {
     if (e.target === els.modal) closeEditModal();
   });
 
-
   // --- DATA LOADING ---
-
   async function loadFilterOptions(currentFilters) {
     const f = currentFilters;
     const { data, error } = await db.rpc("get_program_pontren_options", {
@@ -191,7 +178,6 @@
         if(data.tahapan) setOptions(els.tahapan, data.tahapan);
         return;
     }
-
     const fallback = await db.from("program_pontren_filter_options").select("*").single();
     if (fallback.data) {
         const d = fallback.data;
@@ -207,7 +193,6 @@
   function renderRows(rows) {
     allRowsData = rows || []; 
     els.count.textContent = String(rows?.length || 0);
-    
     const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
 
     if (!rows || !rows.length) {
@@ -262,9 +247,7 @@
   async function fetchData() {
     const f = readFilters();
     setStatus("Syncing...", "load");
-
     await loadFilterOptions(f);
-
     let q = db.from("program_pontren")
       .select("id, profil, definisi, indikator, pic, program, penilaian, tahapan")
       .order("profil", { ascending: true });
@@ -280,9 +263,7 @@
       const like = `%${f.q}%`;
       q = q.or(`profil.ilike.${like},definisi.ilike.${like},program.ilike.${like},tahapan.ilike.${like},pic.ilike.${like}`);
     }
-
     const { data, error } = await q;
-    
     if (error) {
       console.error(error);
       setStatus("Error mengambil data", "err");
@@ -298,57 +279,99 @@
   }
 
   // ==========================================
-  // EXCEL IMPORT LOGIC (UPDATED: UPSERT)
+  // EXCEL IMPORT: SMART MERGE (KEY: PROGRAM + PIC)
   // ==========================================
   els.fileExcel.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!confirm(`Import data dari file "${file.name}"? Data duplikat akan diabaikan.`)) {
+    if (!confirm(`Import "${file.name}"?\n\nKUNCI UNIK: 'PROGRAM' dan 'PIC'.\nJika ditemukan Program & PIC yang sama, data kolom lain (Profil, Indikator, dll) akan dilengkapi/diupdate.`)) {
       els.fileExcel.value = ""; 
       return;
     }
 
-    setStatus("Reading Excel...", "load");
+    setStatus("Reading & Comparing...", "load");
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rawData = XLSX.utils.sheet_to_json(worksheet);
+      const rawExcel = XLSX.utils.sheet_to_json(worksheet);
 
-      if (!rawData.length) throw new Error("File kosong");
+      if (!rawExcel.length) throw new Error("File kosong");
 
-      // Mapping Kolom Excel -> Supabase
-      // PENTING: Gunakan string kosong '' jika null/undefined agar Unique Index SQL bekerja
-      const dbData = rawData.map(row => ({
-        profil: (row['Profil'] || row['profil'] || '').trim(),
-        definisi: (row['Definisi'] || row['definisi'] || '').trim(),
-        indikator: (row['Indikator'] || row['indikator'] || '').trim(),
-        program: (row['Program'] || row['program'] || '').trim(),
-        penilaian: (row['Penilaian'] || row['penilaian'] || '').trim(),
-        tahapan: (row['Tahapan'] || row['tahapan'] || '').trim(),
-        pic: (row['PIC'] || row['pic'] || '').trim()
-      }));
+      // Load DB Data untuk Cek Duplikat
+      const { data: dbData, error: dbErr } = await db.from("program_pontren").select("*");
+      if (dbErr) throw dbErr;
 
-      setStatus(`Processing ${dbData.length} rows...`, "load");
+      let insertCount = 0;
+      let updateCount = 0;
+      const promises = [];
 
-      // UPSERT: Insert or Update (Ignore Duplicate)
-      // ignoreDuplicates: true berarti jika kena unique constraint, biarkan saja (jangan insert, jangan error)
-      const { error } = await db.from("program_pontren").upsert(dbData, { 
-        onConflict: 'profil,definisi,indikator,program,penilaian,tahapan,pic', 
-        ignoreDuplicates: true 
-      });
+      for (let row of rawExcel) {
+        // KUNCI: Program & PIC
+        const newProgram = (row['Program'] || row['program'] || '').trim();
+        const newPic = (row['PIC'] || row['pic'] || '').trim();
+        
+        // Skip jika kunci kosong (tidak valid)
+        if (!newProgram || !newPic) continue;
 
-      if (error) throw error;
+        // Data Pelengkap
+        const newProfil = (row['Profil'] || row['profil'] || '').trim();
+        const newDefinisi = (row['Definisi'] || row['definisi'] || '').trim();
+        const newIndikator = (row['Indikator'] || row['indikator'] || '').trim();
+        const newPenilaian = (row['Penilaian'] || row['penilaian'] || '').trim();
+        const newTahapan = (row['Tahapan'] || row['tahapan'] || '').trim();
 
-      alert("Sukses import! Data duplikat telah dilewati.");
+        // Cari Match berdasarkan Program & PIC
+        const match = dbData.find(d => 
+          (d.program || '').toLowerCase() === newProgram.toLowerCase() && 
+          (d.pic || '').toLowerCase() === newPic.toLowerCase()
+        );
+
+        if (match) {
+          // --- MATCH FOUND: UPDATE (MERGE) ---
+          // Update Profil, Indikator, dll jika di Excel ada isinya.
+          // Jika di Excel kosong, pertahankan data lama.
+          const updates = {
+            profil: newProfil || match.profil,
+            definisi: newDefinisi || match.definisi,
+            indikator: newIndikator || match.indikator,
+            penilaian: newPenilaian || match.penilaian,
+            tahapan: newTahapan || match.tahapan,
+            updated_at: new Date()
+          };
+
+          promises.push(db.from("program_pontren").update(updates).eq("id", match.id));
+          updateCount++;
+
+        } else {
+          // --- NO MATCH: INSERT NEW ---
+          const newData = {
+            program: newProgram,
+            pic: newPic,
+            profil: newProfil,
+            definisi: newDefinisi,
+            indikator: newIndikator,
+            penilaian: newPenilaian,
+            tahapan: newTahapan
+          };
+          promises.push(db.from("program_pontren").insert(newData));
+          insertCount++;
+        }
+      }
+
+      setStatus(`Processing: ${insertCount} New, ${updateCount} Updates...`, "load");
+
+      await Promise.all(promises);
+
+      alert(`Selesai!\n- Data Baru: ${insertCount}\n- Data Diupdate (Merge): ${updateCount}`);
       els.fileExcel.value = "";
       await fetchData();
 
     } catch (err) {
       console.error(err);
-      alert("Gagal Import: " + err.message + "\n(Pastikan SQL Index sudah dibuat)");
+      alert("Gagal Import: " + err.message);
       setStatus("Error Import", "err");
     }
   });
@@ -358,19 +381,16 @@
     if (window.innerWidth < 1024) els.filtersPanel.open = false;
     fetchData();
   });
-  
   els.q.addEventListener("keyup", (e) => {
     if (e.key === "Enter") {
         if (window.innerWidth < 1024) els.filtersPanel.open = false;
         fetchData();
     }
   });
-
   els.btnReset.addEventListener("click", async () => {
     resetFilters();
     await fetchData();
   });
-
   [els.profil, els.indikator, els.program, els.penilaian, els.tahapan, els.pic].forEach(el => 
     el && el.addEventListener("change", fetchData)
   );
