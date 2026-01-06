@@ -18,7 +18,7 @@
       /* THEME: Emerald & Dark Slate */
       --bg-body: #1c1c1c; 
       --bg-surface: #262626;
-      --bg-surface-glass: rgba(38, 38, 38, 0.98);
+      --bg-surface-glass: rgba(38, 38, 38, 0.98); /* Sedikit lebih solid agar sticky enak dilihat */
       --bg-input: #171717;
       
       --border: #404040;
@@ -128,12 +128,18 @@
     .dot.err { background: var(--danger); }
     @keyframes pulse { 0% {opacity: 1} 50% {opacity: .4} 100% {opacity: 1} }
 
-    /* FILTER PANEL */
+    /* --- FILTER PANEL (Sticky Update) --- */
     .filter-panel {
       background: var(--bg-surface-glass);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px); /* Blur diperkuat */
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
+      
+      /* STICKY CONFIGURATION */
+      position: sticky;
+      top: 20px; /* Jarak dari atas browser saat scroll */
+      z-index: 100; /* Pastikan di atas elemen lain */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Shadow agar terlihat melayang */
     }
     
     details summary {
@@ -297,6 +303,7 @@
       .action-bar { flex-direction: column; align-items: stretch; }
       .btn { width: 100%; }
       .header-actions { width: 100%; justify-content: space-between; margin-top: 12px; }
+      /* Di mobile, jika sticky terlalu memakan tempat, user bisa menutup <details> */
     }
   </style>
 </head>
