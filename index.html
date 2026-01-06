@@ -48,9 +48,9 @@
 
     * { box-sizing: border-box; outline: none; }
     
-    /* 1. GLOBAL LAYOUT: KEMBALIKAN SCROLL BODY */
+    /* 1. GLOBAL LAYOUT: SCROLL BODY AKTIF */
     html, body {
-      height: auto; /* Biarkan tinggi otomatis sesuai konten */
+      height: auto;
       min-height: 100vh;
       margin: 0;
       font-family: var(--font-sans);
@@ -61,7 +61,7 @@
         radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
       font-size: 16px;
       -webkit-font-smoothing: antialiased;
-      overflow-y: auto; /* Scroll utama diizinkan (untuk Header) */
+      overflow-y: auto; /* Scroll utama (agar Header bisa naik) */
     }
 
     .wrap {
@@ -73,12 +73,12 @@
       gap: 20px;
     }
 
-    /* HEADER: Normal Flow (Akan ikut tergulir ke atas) */
+    /* HEADER: Akan ikut tergulir (Normal Flow) */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 10px; /* Jarak bawah header */
+      padding-bottom: 10px;
       gap: 16px;
     }
     .brand h1 {
@@ -94,18 +94,15 @@
 
     .header-actions { display: flex; align-items: center; gap: 12px; }
 
-    /* WORKSPACE: STICKY (Menempel saat header lewat) */
+    /* WORKSPACE: STICKY (Menempel setelah Header lewat) */
     .app-workspace {
-      position: sticky; /* KUNCI: Menempel */
-      top: 20px; /* Jarak tempel dari atas layar */
-      
-      /* Tinggi workspace disesuaikan agar pas di layar tanpa scroll ganda */
-      height: calc(100vh - 40px); 
-      
+      position: sticky;
+      top: 20px; /* Jarak tempel */
+      height: calc(100vh - 40px); /* Isi sisa layar Desktop */
       display: flex;
       flex-direction: column;
       gap: 20px;
-      overflow: hidden; /* Mencegah scrollbar di container sticky ini */
+      overflow: hidden; /* Mencegah double scrollbar */
     }
 
     /* FILTER PANEL */
@@ -117,17 +114,19 @@
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-card);
       z-index: 20;
+      display: flex;
+      flex-direction: column;
     }
     
     /* RESULTS AREA */
     .results-area {
-      flex-grow: 1; /* Mengisi sisa tinggi workspace */
+      flex-grow: 1;
       display: flex;
       flex-direction: column;
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      overflow: hidden; /* Wrapper tidak scroll */
+      overflow: hidden;
       box-shadow: var(--shadow-card);
     }
 
@@ -140,9 +139,10 @@
       z-index: 15;
     }
 
+    /* Scroll Desktop */
     .table-responsive {
       flex-grow: 1;
-      overflow: auto; /* Scroll Desktop terjadi di sini */
+      overflow: auto;
       width: 100%;
     }
 
@@ -160,11 +160,11 @@
     td { padding: 20px 24px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
     tbody tr:hover { background: #f0fdf4 !important; }
 
-    /* MOBILE CARDS SCROLL */
+    /* MOBILE CARDS */
     .cards-container { 
       display: none; 
       flex-grow: 1; 
-      overflow-y: auto; /* Scroll Mobile terjadi di sini */
+      overflow-y: auto; 
       padding: 20px; 
       flex-direction: column; gap: 16px; 
     }
@@ -235,6 +235,7 @@
     .toast i { font-size: 20px; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+    /* --- MOBILE OPTIMIZATION (FIXED) --- */
     @media (max-width: 1024px) {
       .wrap { padding: 12px; gap: 12px; }
       
@@ -245,24 +246,40 @@
       .brand h1 { font-size: 20px; }
       .brand p { display: none; }
       
-      /* STICKY WORKSPACE MOBILE */
+      /* STICKY WORKSPACE - MENGGUNAKAN DVH UNTUK MOBILE */
       .app-workspace {
         position: sticky;
-        top: 10px; /* Jarak tempel sedikit lebih kecil di HP */
-        height: calc(100vh - 20px); /* Memenuhi layar */
+        top: 10px; /* Jarak tempel */
+        /* Gunakan dvh (Dynamic Viewport Height) agar tidak tertutup Address Bar */
+        height: calc(100dvh - 20px); 
         gap: 10px;
+        /* Jika layar sangat pendek, izinkan workspace scroll overflow */
+        min-height: 400px;
       }
 
-      .filter-panel { border-radius: var(--radius-md); }
-      .filter-body { max-height: 35vh; } 
+      .filter-panel { 
+        border-radius: var(--radius-md);
+        /* Batasi tinggi filter maks 50% layar, lalu scroll internal */
+        max-height: 50%;
+        display: flex; flex-direction: column;
+      }
+      .filter-body { 
+        padding: 0 20px 20px; 
+        /* Penting: Aktifkan scroll di dalam filter jika kepanjangan */
+        overflow-y: auto; 
+        flex-grow: 1;
+      }
 
       .table-responsive { display: none; }
       
       .cards-container { 
         display: flex; 
         padding: 12px;
+        /* Scroll internal untuk kartu */
+        overflow-y: auto;
       }
 
+      /* Modal Penuh */
       .modal-box { 
         width: 100%; height: 100%; max-height: 100%; border-radius: 0; 
         padding: 20px;
