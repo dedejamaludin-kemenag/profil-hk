@@ -10,6 +10,7 @@
 
   // Cache Element DOM
   const els = {
+    // Filters
     profil: document.getElementById("f_profil"),
     indikator: document.getElementById("f_indikator"),
     program: document.getElementById("f_program"),
@@ -17,8 +18,10 @@
     tahapan: document.getElementById("f_tahapan"),
     pic: document.getElementById("f_pic"),
     q: document.getElementById("q"),
+    // Buttons
     btnApply: document.getElementById("btn_apply"),
     btnReset: document.getElementById("btn_reset"),
+    // Display
     tbody: document.getElementById("tbody"),
     cards: document.getElementById("cards"),
     count: document.getElementById("count"),
@@ -26,7 +29,23 @@
     statusDot: document.getElementById("statusDot"),
     filtersPanel: document.getElementById("filtersPanel"),
     fileExcel: document.getElementById("fileExcel"),
+    // Edit Modal Elements
+    modal: document.getElementById("editModal"),
+    btnCloseModal: document.getElementById("btnCloseModal"),
+    btnCancelEdit: document.getElementById("btnCancelEdit"),
+    btnSaveEdit: document.getElementById("btnSaveEdit"),
+    e_id: document.getElementById("e_id"),
+    e_profil: document.getElementById("e_profil"),
+    e_definisi: document.getElementById("e_definisi"),
+    e_indikator: document.getElementById("e_indikator"),
+    e_program: document.getElementById("e_program"),
+    e_penilaian: document.getElementById("e_penilaian"),
+    e_tahapan: document.getElementById("e_tahapan"),
+    e_pic: document.getElementById("e_pic"),
   };
+
+  // State
+  let allRowsData = []; // Menyimpan data yang sedang tampil untuk referensi klik
 
   function safeText(x) {
     return (x ?? "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -67,10 +86,71 @@
     };
   }
 
-  // 1. Load Filter Options (RPC / Table)
+  // --- MODAL & EDIT LOGIC ---
+  function openEditModal(row) {
+    els.e_id.value = row.id;
+    els.e_profil.value = row.profil || "";
+    els.e_definisi.value = row.definisi || "";
+    els.e_indikator.value = row.indikator || "";
+    els.e_program.value = row.program || "";
+    els.e_penilaian.value = row.penilaian || "";
+    els.e_tahapan.value = row.tahapan || "";
+    els.e_pic.value = row.pic || "";
+    
+    els.modal.classList.add("open");
+  }
+
+  function closeEditModal() {
+    els.modal.classList.remove("open");
+  }
+
+  async function saveChanges() {
+    const id = els.e_id.value;
+    if (!id) return;
+
+    if (!confirm("Simpan perubahan data ini?")) return;
+
+    setStatus("Menyimpan...", "load");
+
+    const updates = {
+      profil: els.e_profil.value,
+      definisi: els.e_definisi.value,
+      indikator: els.e_indikator.value,
+      program: els.e_program.value,
+      penilaian: els.e_penilaian.value,
+      tahapan: els.e_tahapan.value,
+      pic: els.e_pic.value,
+      updated_at: new Date()
+    };
+
+    const { error } = await db.from("program_pontren").update(updates).eq("id", id);
+
+    if (error) {
+      console.error(error);
+      alert("Gagal menyimpan: " + error.message);
+      setStatus("Gagal Simpan", "err");
+    } else {
+      closeEditModal();
+      alert("Data berhasil diperbarui!");
+      await fetchData(); // Refresh data
+    }
+  }
+
+  // Event Listener Modal
+  els.btnCloseModal.addEventListener("click", closeEditModal);
+  els.btnCancelEdit.addEventListener("click", closeEditModal);
+  els.btnSaveEdit.addEventListener("click", saveChanges);
+  
+  // Close modal when clicking outside
+  els.modal.addEventListener("click", (e) => {
+    if (e.target === els.modal) closeEditModal();
+  });
+
+
+  // --- DATA LOADING ---
+
   async function loadFilterOptions(currentFilters) {
     const f = currentFilters;
-    // Coba load via RPC
     const { data, error } = await db.rpc("get_program_pontren_options", {
         profil_filter: f.profil || null,
         indikator_filter: f.indikator || null,
@@ -89,7 +169,6 @@
         return;
     }
 
-    // Fallback: View biasa
     const fallback = await db.from("program_pontren_filter_options").select("*").single();
     if (fallback.data) {
         const d = fallback.data;
@@ -102,9 +181,10 @@
     }
   }
 
-  // 2. Render Data
   function renderRows(rows) {
+    allRowsData = rows || []; // Simpan referensi data global
     els.count.textContent = String(rows?.length || 0);
+    
     const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
 
     if (!rows || !rows.length) {
@@ -113,9 +193,10 @@
       return;
     }
 
-    // UPDATE: Kolom PIC & Tahapan sekarang dirender polos (safeText saja)
-    els.tbody.innerHTML = rows.map(r => `
-      <tr>
+    // Render Table (Desktop)
+    // Kita tambahkan data-index agar tahu baris mana yang diklik
+    els.tbody.innerHTML = rows.map((r, i) => `
+      <tr data-index="${i}">
         <td>
           <span class="cell-profil">${safeText(r.profil)}</span>
           <span class="cell-def">${safeText(r.definisi)}</span>
@@ -128,9 +209,9 @@
       </tr>
     `).join("");
 
-    // Mobile view
-    els.cards.innerHTML = rows.map(r => `
-      <div class="m-card">
+    // Render Cards (Mobile)
+    els.cards.innerHTML = rows.map((r, i) => `
+      <div class="m-card" data-index="${i}">
         <div class="m-header">
           <div class="m-title">${safeText(r.profil)}</div>
           <div class="m-sub">${safeText(r.definisi)}</div>
@@ -142,9 +223,23 @@
         <div class="m-row"><div class="m-label">PIC</div><div>${safeText(r.pic)}</div></div>
       </div>
     `).join("");
+
+    // Tambahkan Event Listener ke setiap baris & kartu yang baru dibuat
+    document.querySelectorAll('tr[data-index]').forEach(row => {
+      row.addEventListener('click', () => {
+        const idx = row.getAttribute('data-index');
+        openEditModal(allRowsData[idx]);
+      });
+    });
+    
+    document.querySelectorAll('.m-card[data-index]').forEach(card => {
+      card.addEventListener('click', () => {
+        const idx = card.getAttribute('data-index');
+        openEditModal(allRowsData[idx]);
+      });
+    });
   }
 
-  // 3. Fetch Core Data
   async function fetchData() {
     const f = readFilters();
     setStatus("Syncing...", "load");
@@ -183,9 +278,7 @@
     els.penilaian.value = ""; els.tahapan.value = ""; els.pic.value = ""; els.q.value = "";
   }
 
-  // ==========================================
-  // EXCEL IMPORT LOGIC
-  // ==========================================
+  // IMPORT EXCEL
   els.fileExcel.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -205,7 +298,6 @@
 
       if (!rawData.length) throw new Error("File kosong");
 
-      // Mapping Kolom Excel -> Supabase
       const dbData = rawData.map(row => ({
         profil: row['Profil'] || row['profil'] || '',
         definisi: row['Definisi'] || row['definisi'] || '',
