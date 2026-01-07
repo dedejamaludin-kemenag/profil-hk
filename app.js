@@ -19,9 +19,7 @@
     q: document.getElementById("q"),
     btnApply: document.getElementById("btn_apply"),
     btnReset: document.getElementById("btn_reset"),
-    
-    // btnAddData: DIHAPUS (sudah tidak ada di header)
-    
+    btnAddData: document.getElementById("btnAddData"),
     tbody: document.getElementById("tbody"),
     cards: document.getElementById("cards"),
     count: document.getElementById("count"),
@@ -37,9 +35,6 @@
     btnCancelEdit: document.getElementById("btnCancelEdit"),
     btnSaveEdit: document.getElementById("btnSaveEdit"),
     btnDeleteData: document.getElementById("btnDeleteData"),
-    
-    // TOMBOL BARU DI MODAL
-    btnSwitchToAdd: document.getElementById("btnSwitchToAdd"),
     
     // Form Inputs
     e_id: document.getElementById("e_id"),
@@ -73,6 +68,8 @@
     toast.innerHTML = `<i class="ph ph-${icon}"></i> <span>${msg}</span>`;
     
     els.toastContainer.appendChild(toast);
+
+    // Auto remove after 4s
     setTimeout(() => {
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
@@ -85,9 +82,18 @@
       els.confirmText.textContent = message;
       els.confirmModal.classList.add("open");
 
-      const handleYes = () => { cleanup(); resolve(true); };
-      const handleNo = () => { cleanup(); resolve(false); };
+      // Handler untuk tombol
+      const handleYes = () => {
+        cleanup();
+        resolve(true);
+      };
+      
+      const handleNo = () => {
+        cleanup();
+        resolve(false);
+      };
 
+      // Cleanup event listeners agar tidak menumpuk
       function cleanup() {
         els.btnConfirmYes.removeEventListener("click", handleYes);
         els.btnConfirmNo.removeEventListener("click", handleNo);
@@ -141,18 +147,7 @@
 
   // --- MODAL & DATA LOGIC ---
   function openModal(row) {
-    // RESET SEMUA INPUT DULU
-    els.e_id.value = "";
-    els.e_profil.value = "";
-    els.e_definisi.value = "";
-    els.e_indikator.value = "";
-    els.e_program.value = "";
-    els.e_penilaian.value = "";
-    els.e_tahapan.value = "";
-    els.e_pic.value = "";
-
     if (row) {
-      // --- MODE EDIT ---
       els.modalTitle.textContent = "Edit Data";
       els.e_id.value = row.id;
       els.e_profil.value = row.profil || "";
@@ -162,20 +157,19 @@
       els.e_penilaian.value = row.penilaian || "";
       els.e_tahapan.value = row.tahapan || "";
       els.e_pic.value = row.pic || "";
-      
-      // Tampilkan tombol Hapus & Tambah Baru
       els.btnDeleteData.classList.remove("hidden");
-      els.btnSwitchToAdd.classList.remove("hidden");
     } else {
-      // --- MODE TAMBAH BARU ---
       els.modalTitle.textContent = "Tambah Data Baru";
-      
-      // Sembunyikan Hapus (karena data belum ada)
+      els.e_id.value = "";
+      els.e_profil.value = "";
+      els.e_definisi.value = "";
+      els.e_indikator.value = "";
+      els.e_program.value = "";
+      els.e_penilaian.value = "";
+      els.e_tahapan.value = "";
+      els.e_pic.value = "";
       els.btnDeleteData.classList.add("hidden");
-      // Sembunyikan tombol Tambah Baru (karena kita sudah di mode tambah baru)
-      els.btnSwitchToAdd.classList.add("hidden");
     }
-    
     els.modal.classList.add("open");
   }
 
@@ -202,7 +196,6 @@
     }
 
     if (id) {
-      // UPDATE
       const confirm = await askConfirm("Simpan perubahan pada data ini?");
       if (!confirm) return;
 
@@ -219,7 +212,6 @@
         await fetchData(); 
       }
     } else {
-      // INSERT
       setStatus("Menambahkan...", "load");
       const { error } = await db.from("program_pontren").insert(dataToSave);
       
@@ -448,9 +440,7 @@
     }
   });
 
-  // Tombol "TAMBAH BARU" dalam MODAL
-  els.btnSwitchToAdd.addEventListener("click", () => openModal(null));
-
+  els.btnAddData.addEventListener("click", () => openModal(null));
   els.btnApply.addEventListener("click", () => {
     if (window.innerWidth < 1024) els.filtersPanel.open = false;
     fetchData();
