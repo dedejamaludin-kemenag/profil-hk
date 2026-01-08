@@ -10,8 +10,8 @@
 
   // Cache Element DOM
   const els = {
-    profilUtama: document.getElementById("f_profil_utama"),
-    profilPendukung: document.getElementById("f_profil_pendukung"),
+    profil: document.getElementById("f_profil"),
+    indikator: document.getElementById("f_indikator"),
     program: document.getElementById("f_program"),
     bukti: document.getElementById("f_bukti"),
     frekuensi: document.getElementById("f_frekuensi"),
@@ -38,8 +38,7 @@
     
     // Form Inputs
     e_id: document.getElementById("e_id"),
-    e_profil_utama: document.getElementById("e_profil_utama"),
-    e_profil_pendukung: document.getElementById("e_profil_pendukung"),
+    e_profil: document.getElementById("e_profil"),
     e_definisi: document.getElementById("e_definisi"),
     e_indikator: document.getElementById("e_indikator"),
     e_program: document.getElementById("e_program"),
@@ -147,8 +146,8 @@
 
   function readFilters() {
     return {
-      profil_utama: norm(els.profilUtama.value),
-      profil_pendukung: norm(els.profilPendukung.value),
+      profil: norm(els.profil.value),
+      indikator: norm(els.indikator.value),
       program: els.program.value.trim(),
       bukti: norm(els.bukti.value),
       frekuensi: norm(els.frekuensi.value),
@@ -162,9 +161,7 @@
     if (row) {
       els.modalTitle.textContent = "Edit Data";
       els.e_id.value = row.id;
-      els.e_profil_utama.value = row.profil_utama || "";
-      els.e_profil_pendukung.value = row.profil_pendukung || "";
-      els.e_definisi.value = row.definisi || "";
+      els.e_profil.value = row.profil || row.profil_utama || "";      els.e_definisi.value = row.definisi || "";
       els.e_indikator.value = row.indikator || "";
       els.e_program.value = row.program || "";
       els.e_bukti.value = row.bukti || "";
@@ -174,9 +171,7 @@
     } else {
       els.modalTitle.textContent = "Tambah Data Baru";
       els.e_id.value = "";
-      els.e_profil_utama.value = "";
-      els.e_profil_pendukung.value = "";
-      els.e_definisi.value = "";
+      els.e_profil.value = "";      els.e_definisi.value = "";
       els.e_indikator.value = "";
       els.e_program.value = "";
       els.e_bukti.value = "";
@@ -194,8 +189,7 @@
   async function saveChanges() {
     const id = els.e_id.value;
     const dataToSave = {
-      profil_utama: norm(els.e_profil_utama.value),
-      profil_pendukung: norm(els.e_profil_pendukung.value),
+      profil: norm(els.e_profil.value),
       definisi: els.e_definisi.value.trim(),
       indikator: els.e_indikator.value.trim(),
       program: els.e_program.value.trim(),
@@ -270,7 +264,7 @@
     const { data, error } = await db
       .from("program_pontren")
       .select("*")
-      .order("profil_utama", { ascending: true })
+      .order("profil", { ascending: true })
       .order("program", { ascending: true });
 
     if (error) {
@@ -291,8 +285,8 @@
   function applyFilters(rows, f, skipKey = null) {
     const q = normLower(f.q);
     return (rows || []).filter(r => {
-      if (skipKey !== "profil_utama" && f.profil_utama && norm(r.profil_utama) !== f.profil_utama) return false;
-      if (skipKey !== "profil_pendukung" && f.profil_pendukung && norm(r.profil_pendukung) !== f.profil_pendukung) return false;
+      if (skipKey !== "profil" && f.profil && norm(r.profil || r.profil_utama) !== f.profil) return false;
+      if (skipKey !== "indikator" && f.indikator && norm(r.indikator) !== f.indikator) return false;
       if (skipKey !== "program" && f.program && norm(r.program) !== f.program) return false;
       if (skipKey !== "pic" && f.pic && norm(r.pic) !== f.pic) return false;
       if (skipKey !== "bukti" && f.bukti && norm(r.bukti) !== f.bukti) return false;
@@ -300,8 +294,7 @@
 
       if (!q) return true;
       const hay = [
-        r.profil_utama,
-        r.profil_pendukung,
+        r.profil || r.profil_utama,
         r.definisi,
         r.indikator,
         r.program,
@@ -314,15 +307,15 @@
   }
 
   function updateFilterOptions(f) {
-    const rowsForProfilUtama = applyFilters(allRowsData, f, "profil_utama");
-    const rowsForProfilPendukung = applyFilters(allRowsData, f, "profil_pendukung");
+    const rowsForProfil = applyFilters(allRowsData, f, "profil");
+    const rowsForIndikator = applyFilters(allRowsData, f, "indikator");
     const rowsForProgram = applyFilters(allRowsData, f, "program");
     const rowsForPic = applyFilters(allRowsData, f, "pic");
     const rowsForBukti = applyFilters(allRowsData, f, "bukti");
     const rowsForFrekuensi = applyFilters(allRowsData, f, "frekuensi");
 
-    setOptions(els.profilUtama, uniqueSorted(rowsForProfilUtama.map(r => r.profil_utama)));
-    setOptions(els.profilPendukung, uniqueSorted(rowsForProfilPendukung.map(r => r.profil_pendukung)));
+    setOptions(els.profil, uniqueSorted(rowsForProfil.map(r => r.profil || r.profil_utama)));
+    setOptions(els.indikator, uniqueSorted(rowsForIndikator.map(r => r.indikator)));
     setOptions(els.program, uniqueSorted(rowsForProgram.map(r => r.program)));
     setOptions(els.pic, uniqueSorted(rowsForPic.map(r => r.pic)));
     setOptions(els.bukti, uniqueSorted(rowsForBukti.map(r => r.bukti)));
@@ -335,16 +328,14 @@
     const empty = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Data tidak ditemukan.</div>`;
 
     if (!viewRowsData.length) {
-      els.tbody.innerHTML = `<tr><td colspan="8">${empty}</td></tr>`;
+      els.tbody.innerHTML = `<tr><td colspan="6">${empty}</td></tr>`;
       els.cards.innerHTML = empty;
       return;
     }
 
     els.tbody.innerHTML = viewRowsData.map((r, i) => `
       <tr data-index="${i}">
-        <td>${safeText(r.profil_utama)}</td>
-        <td>${safeText(r.profil_pendukung || "-")}</td>
-        <td>${safeText(r.definisi || "-")}</td>
+        <td><span class="cell-profil">${safeText(r.profil || r.profil_utama || "-")}</span><span class="cell-def">${safeText(r.definisi || "-")}</span></td>
         <td>${safeText(r.indikator || "-")}</td>
         <td>${safeText(r.program || "-")}</td>
         <td>${safeText(r.pic || "-")}</td>
@@ -356,7 +347,7 @@
     els.cards.innerHTML = viewRowsData.map((r, i) => `
       <div class="m-card" data-index="${i}">
         <div class="m-header">
-          <div class="m-title">${safeText(r.profil_utama)} <span style="opacity:.7">${safeText(r.profil_pendukung ? `(${r.profil_pendukung})` : "")}</span></div>
+          <div class="m-title">${safeText(r.profil || r.profil_utama || "-")}</div>
           <div class="m-sub">${safeText(r.definisi || "-")}</div>
         </div>
         <div class="m-row"><div class="m-label">Indikator</div><div>${safeText(r.indikator || "-")}</div></div>
@@ -385,8 +376,7 @@
   }
 
   function resetFilters() {
-    els.profilUtama.value = "";
-    els.profilPendukung.value = "";
+    els.profil.value = "";    els.indikator.value = "";
     els.program.value = "";
     els.pic.value = "";
     els.bukti.value = "";
@@ -428,13 +418,8 @@
         if (!newProgram || !newPic) continue;
 
         // Template baru (Matriks_Program_AQIL.xlsx)
-        const newProfilUtama = norm(
-          row['Profil (Utama)'] || row['Profil Utama'] || row['Profil'] || row['profil']
-        );
-        const newProfilPendukung = norm(
-          row['Profil (Pendukung)'] || row['Profil Pendukung'] || row['profil_pendukung']
-        );
-        const newDefinisi = norm(row['Definisi'] || row['definisi']);
+        const newProfil = norm(row['Profil'] || row['Profil (Utama)'] || row['Profil Utama'] || row['profil'] || row['profil_utama']);
+                const newDefinisi = norm(row['Definisi'] || row['definisi']);
         const newIndikator = norm(row['Indikator'] || row['indikator']);
         const newBukti = norm(row['Bukti'] || row['Penilaian'] || row['penilaian'] || row['bukti']);
         const newFrekuensi = norm(row['Frekuensi'] || row['Tahapan'] || row['tahapan'] || row['frekuensi']);
@@ -446,8 +431,7 @@
 
         if (match) {
           const updates = {
-            profil_utama: newProfilUtama || match.profil_utama,
-            profil_pendukung: newProfilPendukung || match.profil_pendukung,
+            profil: newProfil || match.profil || match.profil_utama,
             definisi: newDefinisi || match.definisi,
             indikator: newIndikator || match.indikator,
             bukti: newBukti || match.bukti,
@@ -460,8 +444,7 @@
           const newData = {
             program: newProgram,
             pic: newPic,
-            profil_utama: newProfilUtama,
-            profil_pendukung: newProfilPendukung,
+            profil: newProfil,
             definisi: newDefinisi,
             indikator: newIndikator,
             bukti: newBukti,
@@ -501,8 +484,8 @@
     fetchData();
   });
   [
-    els.profilUtama,
-    els.profilPendukung,
+    els.profil,
+    els.indikator,
     els.program,
     els.pic,
     els.bukti,
