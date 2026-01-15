@@ -408,7 +408,7 @@
   fetchData();
 }
 
-  // --- IMPORT EXCEL (Matriks_Program_AQIL) ---
+  // --- IMPORT EXCEL (Robust Sasaran Mapping) ---
 function normHeader(s) {
   return String(s ?? "")
     .trim()
@@ -428,12 +428,12 @@ const HEADER_TO_DB = {
   program: "program",
   definisi: "definisi",
   indikator: "indikator",
-  
-    sasaran: "sasaran",
-    target: "sasaran",
-    sasaran_program: "sasaran",
-    sasaran_kegiatan: "sasaran",
-sop: "sop",
+  sasaran: "sasaran",
+  target: "sasaran",
+  sasaran_program: "sasaran",
+  sasaran_kegiatan: "sasaran",
+
+  sop: "sop",
   instruksi_kerja: "instruksi_kerja",
   instruksi: "instruksi_kerja",
   instruksi_kerja_ik: "instruksi_kerja",
@@ -444,24 +444,50 @@ sop: "sop",
 
   bukti: "bukti",
   eviden: "bukti",
-  penilaian: "bukti",
+  evidance: "bukti",
 
   frekuensi: "frekuensi",
   tahapan: "frekuensi",
 };
 
+function resolveDbKey(rawHeader) {
+  const nh = normHeader(rawHeader);
+
+  // 1) exact mapping
+  if (HEADER_TO_DB[nh]) return HEADER_TO_DB[nh];
+
+  // 2) fallback: contains
+  if (nh.includes("sasaran") || nh.includes("target")) return "sasaran";
+  if (nh.includes("instruksi") || nh.includes("_ik") || nh === "ik") return "instruksi_kerja";
+  if (nh.includes("sop")) return "sop";
+  if (nh.includes("frekuensi") || nh.includes("tahapan")) return "frekuensi";
+  if (nh.includes("bukti") || nh.includes("eviden")) return "bukti";
+  if (nh.includes("pic") || nh.includes("penanggung_jawab") || nh.includes("pj")) return "pic";
+  if (nh.includes("indikator")) return "indikator";
+  if (nh.includes("definisi")) return "definisi";
+  if (nh === "profil") return "profil";
+
+  return null;
+}
+
 function makeKey(profil, program) {
   return `${normLower(profil)}||${normLower(program)}`;
+}
+
+function setIfBetter(obj, key, val) {
+  const v = norm(val);
+  if (!v) return;
+  if (!obj[key]) obj[key] = v;
 }
 
 els.fileExcel.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  const confirm = await askConfirm(
+  const ok = await askConfirm(
     `Import file "${file.name}"?\nDuplikat (Profil & Program sama) akan di-merge (update otomatis).`
   );
-  if (!confirm) {
+  if (!ok) {
     els.fileExcel.value = "";
     return;
   }
@@ -476,27 +502,9 @@ els.fileExcel.addEventListener("change", async (e) => {
     if (!aoa.length) throw new Error("File kosong");
 
     const rawHeaders = aoa[0] || [];
-    const headerMap = rawHeaders.map((h) => {
-  const nh = normHeader(h);
-  // Mapping eksplisit
-  if (HEADER_TO_DB[nh]) return HEADER_TO_DB[nh];
+    const headerMap = rawHeaders.map((h) => resolveDbKey(h));
 
-  // Fallback (lebih "kebal" dari variasi header Excel)
-  if (nh.includes("sasaran") || nh.includes("target")) return "sasaran";
-  if (nh.includes("instruksi")) return "instruksi_kerja";
-  if (nh.includes("sop")) return "sop";
-  if (nh.includes("frekuensi") || nh.includes("tahapan")) return "frekuensi";
-  if (nh.includes("bukti") || nh.includes("eviden") || nh.includes("evidence")) return "bukti";
-  if (nh.includes("pic") || nh.includes("pj") || nh.includes("penanggung")) return "pic";
-  if (nh.includes("indikator")) return "indikator";
-  if (nh.includes("definisi")) return "definisi";
-  if (nh.includes("program")) return "program";
-  if (nh.includes("profil") || nh.includes("kategori")) return "profil";
-
-  return null;
-});
-
-    // Ambil DB sekali untuk merge kosong -> tetap pakai data lama
+    // Fetch DB (untuk merge: agar kolom kosong tidak menimpa data lama)
     const { data: dbData, error: dbErr } = await db.from("program_pontren").select("*");
     if (dbErr) throw dbErr;
 
@@ -508,7 +516,7 @@ els.fileExcel.addEventListener("change", async (e) => {
       existingMap.set(makeKey(p, pr), r);
     });
 
-    const stagedMap = new Map(); // key -> merged row (last win)
+    const stagedMap = new Map();
     let skipped = 0;
 
     for (let i = 1; i < aoa.length; i++) {
@@ -519,16 +527,11 @@ els.fileExcel.addEventListener("change", async (e) => {
       for (let c = 0; c < headerMap.length; c++) {
         const k = headerMap[c];
         if (!k) continue;
-        const val = norm(line[c]);
-// Jangan menimpa nilai yang sudah ada dengan kosong (misal ada 2 kolom yang map ke field sama)
-if (val) obj[k] = val;
-else if (obj[k] === undefined) obj[k] = "";
+        setIfBetter(obj, k, line[c]);
       }
 
-      // Wajib: profil & program (mengikuti unique key)
       const profil = obj.profil || "";
       const program = obj.program || "";
-
       if (!profil || !program) {
         skipped++;
         continue;
@@ -540,16 +543,17 @@ else if (obj[k] === undefined) obj[k] = "";
       const merged = {
         profil,
         program,
-definisi: obj.definisi || (old ? (old.definisi || "") : ""),
-        indikator: obj.indikator || (old ? (old.indikator || "") : ""),
-        sop: obj.sop || (old ? (old.sop || "") : ""),
-        instruksi_kerja: obj.instruksi_kerja || (old ? (old.instruksi_kerja || "") : ""),
-        pic: obj.pic || (old ? (old.pic || "") : ""),
-        bukti: obj.bukti || (old ? (old.bukti || "") : ""),
-        frekuensi: obj.frekuensi || (old ? (old.frekuensi || "") : ""),
+        definisi: (obj.definisi || (old ? (old.definisi || "") : "")),
+        indikator: (obj.indikator || (old ? (old.indikator || "") : "")),
+        sasaran: (obj.sasaran || (old ? (old.sasaran || "") : "")),
+        pic: (obj.pic || (old ? (old.pic || "") : "")),
+        frekuensi: (obj.frekuensi || (old ? (old.frekuensi || "") : "")),
+        sop: (obj.sop || (old ? (old.sop || "") : "")),
+        instruksi_kerja: (obj.instruksi_kerja || (old ? (old.instruksi_kerja || "") : "")),
+        bukti: (obj.bukti || (old ? (old.bukti || "") : "")),
       };
 
-      // Rapikan indikator multiline (kalau user pakai ; / newline)
+      // Rapikan indikator multiline
       if (typeof merged.indikator === "string" && merged.indikator) {
         merged.indikator = merged.indikator
           .split(/\r?\n|;/)
@@ -566,13 +570,11 @@ definisi: obj.definisi || (old ? (old.definisi || "") : ""),
 
     let insertCount = 0;
     let updateCount = 0;
-
     stagedMap.forEach((_, key) => {
       if (existingMap.has(key)) updateCount++;
       else insertCount++;
     });
 
-    // Upsert bertahap agar tidak terlalu besar
     const CHUNK = 200;
     for (let i = 0; i < stagedRows.length; i += CHUNK) {
       const chunk = stagedRows.slice(i, i + CHUNK);
@@ -584,9 +586,11 @@ definisi: obj.definisi || (old ? (old.definisi || "") : ""),
 
     const skippedNote = skipped ? ` (skip ${skipped} baris: profil/program kosong)` : "";
     notify(`Selesai! Baru: ${insertCount}, Update: ${updateCount}${skippedNote}`, "success");
+
     els.fileExcel.value = "";
     await refreshAllData();
     fetchData();
+    setStatus("Ready", "ok");
   } catch (err) {
     console.error(err);
     notify("Gagal Import: " + (err?.message || String(err)), "error");
