@@ -476,7 +476,25 @@ els.fileExcel.addEventListener("change", async (e) => {
     if (!aoa.length) throw new Error("File kosong");
 
     const rawHeaders = aoa[0] || [];
-    const headerMap = rawHeaders.map((h) => HEADER_TO_DB[normHeader(h)] || null);
+    const headerMap = rawHeaders.map((h) => {
+  const nh = normHeader(h);
+  // Mapping eksplisit
+  if (HEADER_TO_DB[nh]) return HEADER_TO_DB[nh];
+
+  // Fallback (lebih "kebal" dari variasi header Excel)
+  if (nh.includes("sasaran") || nh.includes("target")) return "sasaran";
+  if (nh.includes("instruksi")) return "instruksi_kerja";
+  if (nh.includes("sop")) return "sop";
+  if (nh.includes("frekuensi") || nh.includes("tahapan")) return "frekuensi";
+  if (nh.includes("bukti") || nh.includes("eviden") || nh.includes("evidence")) return "bukti";
+  if (nh.includes("pic") || nh.includes("pj") || nh.includes("penanggung")) return "pic";
+  if (nh.includes("indikator")) return "indikator";
+  if (nh.includes("definisi")) return "definisi";
+  if (nh.includes("program")) return "program";
+  if (nh.includes("profil") || nh.includes("kategori")) return "profil";
+
+  return null;
+});
 
     // Ambil DB sekali untuk merge kosong -> tetap pakai data lama
     const { data: dbData, error: dbErr } = await db.from("program_pontren").select("*");
@@ -502,7 +520,9 @@ els.fileExcel.addEventListener("change", async (e) => {
         const k = headerMap[c];
         if (!k) continue;
         const val = norm(line[c]);
-        obj[k] = val;
+// Jangan menimpa nilai yang sudah ada dengan kosong (misal ada 2 kolom yang map ke field sama)
+if (val) obj[k] = val;
+else if (obj[k] === undefined) obj[k] = "";
       }
 
       // Wajib: profil & program (mengikuti unique key)
