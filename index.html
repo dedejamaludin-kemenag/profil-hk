@@ -456,6 +456,47 @@
   max-width: none !important;
   box-sizing: border-box;
 }
+
+
+/* --- PATCH 2: Modal edit benar-benar lebar di desktop (override semua rule lama) --- */
+.modal .modal-box,
+.modal-box{
+  max-width: none !important;
+}
+
+@media (min-width: 900px){
+  .modal .modal-box{
+    width: calc(100vw - 80px) !important; /* hampir full kiri-kanan */
+    max-width: 1400px !important;        /* tapi masih ada batas aman */
+  }
+}
+
+@media (min-width: 1200px){
+  .modal .modal-box{
+    width: calc(100vw - 120px) !important;
+    max-width: 1600px !important;
+  }
+}
+
+/* Pastikan konten form tidak punya 'max-width' yang bikin ngumpul di tengah */
+.modal .modal-body,
+.modal-body{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.modal .modal-body .form-group,
+.modal-body .form-group{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.modal .modal-body input[type="text"],
+.modal .modal-body textarea,
+.modal .modal-body select{
+  width: 100% !important;
+  max-width: none !important;
+}
 </style>
 </head>
 <body>
