@@ -393,18 +393,72 @@
     }
 
 
-/* Tabel: pembagian lebar kolom (kecil/sedang/besar) lebih konsisten */
-table.data-table{
-  table-layout: fixed;
+/* Modal edit: lebih lebar & nyaman di semua device */
+.modal-box{
+  width: min(980px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+}
+.modal-body{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.modal-body .form-group{
+  margin: 0;
+}
+.modal-body input[type="text"],
+.modal-body textarea{
   width: 100%;
+  box-sizing: border-box;
+  padding: 12px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-main);
+  outline: none;
 }
-table.data-table th, table.data-table td{
-  word-break: break-word;
-  overflow-wrap: anywhere;
+.modal-body textarea{
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.modal-actions{
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, rgba(233,239,247,0.98), rgba(233,239,247,0.72));
+  padding-top: 12px;
+  margin-top: 12px;
 }
 
 
-/* --- PATCH: Modal edit lebih lebar (desktop) + input full width --- */
+/* --- PATCH: Modal edit full width (desktop) --- */
+.modal-box{
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+.modal-body{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.modal-body .form-group{
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+}
+.modal-body input[type="text"],
+.modal-body textarea,
+.modal-body select{
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+
+/* --- PATCH 2: Modal edit benar-benar lebar di desktop (override semua rule lama) --- */
 .modal .modal-box,
 .modal-box{
   max-width: none !important;
@@ -412,34 +466,29 @@ table.data-table th, table.data-table td{
 
 @media (min-width: 900px){
   .modal .modal-box{
-    width: calc(100vw - 60px) !important;  /* ~10% lebih lebar dari versi sebelumnya */
-    max-width: 1540px !important;
-    max-height: calc(100vh - 32px);
-    overflow: auto;
+    width: calc(100vw - 80px) !important; /* hampir full kiri-kanan */
+    max-width: 1400px !important;        /* tapi masih ada batas aman */
   }
 }
 
 @media (min-width: 1200px){
   .modal .modal-box{
-    width: calc(100vw - 100px) !important;
-    max-width: 1760px !important;
+    width: calc(100vw - 120px) !important;
+    max-width: 1600px !important;
   }
 }
 
+/* Pastikan konten form tidak punya 'max-width' yang bikin ngumpul di tengah */
 .modal .modal-body,
 .modal-body{
   width: 100% !important;
   max-width: none !important;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
 }
 
 .modal .modal-body .form-group,
 .modal-body .form-group{
   width: 100% !important;
   max-width: none !important;
-  margin: 0 !important;
 }
 
 .modal .modal-body input[type="text"],
@@ -447,23 +496,6 @@ table.data-table th, table.data-table td{
 .modal .modal-body select{
   width: 100% !important;
   max-width: none !important;
-  box-sizing: border-box;
-}
-
-
-/* --- PATCH: Filter ikut tergulir, judul hasil filter tetap --- */
-.filter-panel{
-  position: relative !important;
-  top: auto !important;
-  z-index: auto !important;
-}
-
-.table-header-info{
-  position: sticky;
-  top: 0;
-  z-index: 80;
-  background: var(--bg-surface);
-  backdrop-filter: blur(10px);
 }
 </style>
 </head>
@@ -528,21 +560,18 @@ table.data-table th, table.data-table td{
       </div>
       <div class="table-responsive">
         <table>
-                              <thead>
+                    <thead>
             <tr>
               <th width="4%">NO</th>
-
-              <th width="20%">PROFIL &amp; DEFINISI</th>
+              <th width="18%">PROFIL &amp; DEFINISI</th>
               <th width="16%">INDIKATOR</th>
-
-              <th width="10%">PROGRAM</th>
+              <th width="12%">PROGRAM</th>
               <th width="10%">SASARAN</th>
-              <th width="6%">PIC</th>
-              <th width="6%">FREKUENSI</th>
-              <th width="6%">BUKTI</th>
-
-              <th width="12%">SOP</th>
-              <th width="12%">INSTRUKSI KERJA</th>
+              <th width="8%">PIC</th>
+              <th width="8%">FREKUENSI</th>
+              <th width="10%">SOP</th>
+              <th width="10%">INSTRUKSI KERJA</th>
+              <th width="8%">BUKTI</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -559,49 +588,59 @@ table.data-table th, table.data-table td{
         <button class="modal-close" id="btnCloseModal"><i class="ph ph-x"></i></button>
       </div>
       <div class="modal-body">
-        <input type="hidden" id="e_id">
-        <div class="form-group">
-          <label>Profil</label>
-          <input type="text" id="e_profil" placeholder="A / Q / I / L">
-        </div>
-        <div class="form-group">
-          <label>Definisi</label>
-          <textarea id="e_definisi"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Indikator</label>
-          <textarea id="e_indikator"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Program</label>
-          <input type="text" id="e_program">
-        </div>
-        <div class="form-group">
-          <label>Sasaran</label>
-          <input type="text" id="e_sasaran" placeholder="Contoh: Santri kelas X, Tim Bahasa, dll">
-        </div>
-        <div class="form-group">
-          <label>SOP</label>
-          <textarea id="e_sop" placeholder="Tulis SOP / ringkas SOP di sini..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Instruksi Kerja</label>
-          <textarea id="e_instruksi_kerja" placeholder="Tulis instruksi kerja / langkah kerja di sini..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Bukti</label>
-          <input type="text" id="e_bukti">
-        </div>
-        <div class="form-group">
-          <label>Frekuensi</label>
-          <input type="text" id="e_frekuensi">
-        </div>
-        <div class="form-group">
-          <label>PIC</label>
-          <input type="text" id="e_pic">
-        </div>
-      </div>
-      
+  <input type="hidden" id="e_id">
+
+  <div class="form-group">
+    <label>Profil</label>
+    <input type="text" id="e_profil" placeholder="A / Q / I / L">
+  </div>
+
+  <div class="form-group">
+    <label>Definisi</label>
+    <textarea id="e_definisi" placeholder="Tulis definisi singkat sesuai profil..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Indikator</label>
+    <textarea id="e_indikator" placeholder="Boleh lebih dari satu (per baris)"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Program</label>
+    <input type="text" id="e_program" placeholder="Nama program / kegiatan">
+  </div>
+
+  <div class="form-group">
+    <label>Sasaran</label>
+    <input type="text" id="e_sasaran" placeholder="Contoh: Santri kelas X, Tim Bahasa, dll">
+  </div>
+
+  <div class="form-group">
+    <label>PIC</label>
+    <input type="text" id="e_pic" placeholder="Penanggung jawab / unit">
+  </div>
+
+  <div class="form-group">
+    <label>Frekuensi</label>
+    <input type="text" id="e_frekuensi" placeholder="Harian / Pekanan / Bulanan / dsb">
+  </div>
+
+  <div class="form-group">
+    <label>SOP</label>
+    <textarea id="e_sop" placeholder="Tulis SOP / ringkas SOP di sini..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Instruksi Kerja</label>
+    <textarea id="e_instruksi_kerja" placeholder="Tulis instruksi kerja / langkah kerja di sini..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Bukti</label>
+    <input type="text" id="e_bukti" placeholder="Dokumentasi / eviden / laporan / dsb">
+  </div>
+</div>
+
       <div class="modal-actions">
         <button class="btn btn-danger" id="btnDeleteData" style="height:44px">
           <i class="ph ph-trash"></i> Hapus
