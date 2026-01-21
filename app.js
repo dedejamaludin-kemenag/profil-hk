@@ -424,14 +424,15 @@ const SILABUS_AKADEMIK_SEM_TABLE = "program_pontren_silabus_akademik_semester";
       els.e_program.value = row.program || "";
       els.e_target_renstra.value = row.target_renstra || "";
       els.e_sasaran.value = row.sasaran || "";
-      // ringkasan silabus diambil dari cache (A / NA(n))
+      // Ringkasan Silabus/SOP/IK/Bukti ditampilkan konsisten (berbasis hitungan dari Kelola Dokumen)
+      const cDocs = docsCountsByProgram.get(String(row.id)) || { sop: 0, ik: 0, rec: 0, sil_text: "-", sil_total: 0 };
       if (els.e_silabus) {
-        const c = docsCountsByProgram.get(String(row.id)) || { sil_text: "-" };
-        els.e_silabus.value = c.sil_text || "-";
+        const sil = (cDocs.sil_total || 0) === 0 ? "0" : String(cDocs.sil_text || "-");
+        els.e_silabus.value = `Silabus: ${sil}`;
       }
-      els.e_sop.value = row.sop || "";
-      els.e_instruksi_kerja.value = row.instruksi_kerja || "";
-      els.e_bukti.value = row.bukti || "";
+      els.e_sop.value = `SOP: ${Number(cDocs.sop || 0)}`;
+      els.e_instruksi_kerja.value = `IK: ${Number(cDocs.ik || 0)}`;
+      els.e_bukti.value = `Record: ${Number(cDocs.rec || 0)}`;
       els.e_frekuensi.value = row.frekuensi || "";
       els.e_pic.value = row.pic || "";
       els.btnDeleteData.classList.remove("hidden");
@@ -451,10 +452,10 @@ const SILABUS_AKADEMIK_SEM_TABLE = "program_pontren_silabus_akademik_semester";
       els.e_program.value = "";
       els.e_target_renstra.value = "";
       els.e_sasaran.value = "";
-      if (els.e_silabus) els.e_silabus.value = "";
-      els.e_sop.value = "";
-      els.e_instruksi_kerja.value = "";
-      els.e_bukti.value = "";
+	      if (els.e_silabus) els.e_silabus.value = "Silabus: 0";
+	      els.e_sop.value = "SOP: 0";
+	      els.e_instruksi_kerja.value = "IK: 0";
+	      els.e_bukti.value = "Record: 0";
       els.e_frekuensi.value = "";
       els.e_pic.value = "";
       els.btnDeleteData.classList.add("hidden");
@@ -1607,11 +1608,17 @@ if (subtype === "AKADEMIK") {
 
     // jika modal edit sedang terbuka, sinkronkan ringkasan silabus juga
     try {
-      if (els.modal && els.modal.classList.contains("open") && activeProgramRow && els.e_silabus) {
-        const pid = String(activeProgramRow.id || "");
-        const c = docsCountsByProgram.get(pid) || { sil_text: "-" };
-        els.e_silabus.value = c.sil_text || "-";
-      }
+	      if (els.modal && els.modal.classList.contains("open") && activeProgramRow) {
+	        const pid = String(activeProgramRow.id || "");
+	        const cDocs = docsCountsByProgram.get(pid) || { sop: 0, ik: 0, rec: 0, sil_text: "-", sil_total: 0 };
+	        if (els.e_silabus) {
+	          const sil = (cDocs.sil_total || 0) === 0 ? "0" : String(cDocs.sil_text || "-");
+	          els.e_silabus.value = `Silabus: ${sil}`;
+	        }
+	        if (els.e_sop) els.e_sop.value = `SOP: ${Number(cDocs.sop || 0)}`;
+	        if (els.e_instruksi_kerja) els.e_instruksi_kerja.value = `IK: ${Number(cDocs.ik || 0)}`;
+	        if (els.e_bukti) els.e_bukti.value = `Record: ${Number(cDocs.rec || 0)}`;
+	      }
     } catch (_) {}
   }
 

@@ -796,6 +796,20 @@
       .grid-filters {
         grid-template-columns: 1fr !important;
       }
+
+      /* Modal edit: nyaman di HP */
+      .modal-box{ width: calc(100vw - 16px) !important; max-height: calc(100vh - 16px) !important; }
+      .modal-head{ margin-bottom: 14px; }
+      .modal-title{ font-size: 18px; }
+      .modal-actions{ padding-top: 10px; margin-top: 12px; }
+      .right-actions{ flex-direction: row; gap: 10px; }
+      .right-actions .btn{ flex: 1 1 auto; }
+      #btnDeleteData{ width: 100%; }
+      .inline-actions .btn-mini{ width: 100%; }
+
+      /* Docs modal: grid jadi 1 kolom */
+      .docs-grid{ grid-template-columns: 1fr !important; }
+      .tabs{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
 
     /* ======================================================
@@ -882,12 +896,14 @@
 }
 
 .modal-body input.summary-pill[disabled]{
-  background: rgba(255,255,255,0.88);
-  border: 1px dashed rgba(59,130,246,0.28);
-  border-radius: 999px;
-  font-weight: 800;
-  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  padding: 12px 12px;
+  height: 44px;
   color: var(--text-main);
+  opacity: 1;
 }
 
 .modal-body textarea{
@@ -1324,22 +1340,22 @@
 
   <div class="form-group">
     <label>Silabus</label>
-    <input type="text" id="e_silabus" disabled class="summary-pill" placeholder="Ringkasan otomatis. Kelola di Kelola Dokumen → Silabus">
+    <input type="text" id="e_silabus" disabled class="summary-pill" placeholder="-">
   </div>
 
   <div class="form-group">
     <label>SOP</label>
-    <textarea id="e_sop" disabled placeholder="Diisi otomatis dari Kelola Dokumen (ringkasan)."></textarea>
+    <input type="text" id="e_sop" disabled class="summary-pill" placeholder="-">
   </div>
 
   <div class="form-group">
     <label>Instruksi Kerja</label>
-    <textarea id="e_instruksi_kerja" disabled placeholder="Diisi otomatis dari Kelola Dokumen (ringkasan)."></textarea>
+    <input type="text" id="e_instruksi_kerja" disabled class="summary-pill" placeholder="-">
   </div>
 
   <div class="form-group">
     <label>Bukti</label>
-    <input type="text" id="e_bukti" disabled class="summary-pill" placeholder="Diisi otomatis dari Kelola Dokumen (ringkasan)">
+    <input type="text" id="e_bukti" disabled class="summary-pill" placeholder="-">
   </div>
 
   <div class="inline-actions">
