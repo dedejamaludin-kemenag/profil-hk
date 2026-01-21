@@ -14,6 +14,10 @@
   const DOCS_TABLE = "program_pontren_docs";
   const RECORDS_TABLE = "program_pontren_records";
 
+  // Silabus non-akademik (meta + items)
+  const SILABUS_META_TABLE = "program_pontren_silabus";
+  const SILABUS_ITEMS_TABLE = "program_pontren_silabus_items";
+
   // Template XLSX dibundel sebagai Base64 agar bisa dipakai meski file dibuka via file:// (tanpa fetch/CORS)
   const TEMPLATES_B64 = {
     SOP: "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",
@@ -84,10 +88,29 @@
 
     tabBtnSOP: document.getElementById("tabBtnSOP"),
     tabBtnIK: document.getElementById("tabBtnIK"),
+    tabBtnSIL: document.getElementById("tabBtnSIL"),
     tabBtnREC: document.getElementById("tabBtnREC"),
     tabPanelSOP: document.getElementById("tabPanelSOP"),
     tabPanelIK: document.getElementById("tabPanelIK"),
+    tabPanelSIL: document.getElementById("tabPanelSIL"),
     tabPanelREC: document.getElementById("tabPanelREC"),
+
+    // Silabus
+    sil_subtype: document.getElementById("sil_subtype"),
+    sil_notes: document.getElementById("sil_notes"),
+    silTbody: document.getElementById("silTbody"),
+    btnSilAddRow: document.getElementById("btnSilAddRow"),
+    btnSilSave: document.getElementById("btnSilSave"),
+    silStatus: document.getElementById("silStatus"),
+
+    // Silabus templates & academic upload
+    btnTplSIL: document.getElementById("btnTplSIL"),
+    menuTplSIL: document.getElementById("menuTplSIL"),
+    btnUploadSilAcademic: document.getElementById("btnUploadSilAcademic"),
+    sil_academic_file: document.getElementById("sil_academic_file"),
+    silAcademicBox: document.getElementById("silAcademicBox"),
+    silNonAcademicBox: document.getElementById("silNonAcademicBox"),
+    silAcademicList: document.getElementById("silAcademicList"),
 
     // Input SOP
     doc_title: document.getElementById("doc_title"),
@@ -158,6 +181,11 @@
   let docsCountsByProgram = new Map(); // program_id -> { sop: n, ik: n, rec: n }
   let warnedMissingDocsTables = false;
   let lastDocsTab = "SOP";
+
+  // state silabus (non-akademik)
+  let activeSilabusId = null;
+  let activeSilabusSubtype = null;
+
 
   // Normalisasi string
   function norm(x) {
@@ -372,6 +400,13 @@
     return `program_pontren/${programId}/${kind}/${nowKey()}_${safe}`;
   }
 
+
+function buildStoragePathSilabus(programId, subtype, fileName) {
+  const safe = sanitizeFileName(fileName);
+  const st = sanitizeFileName(subtype || "AKADEMIK");
+  return `program_pontren/${programId}/SILABUS/${st}/${nowKey()}_${safe}`;
+}
+
   async function getFileUrl(path) {
     // 1) coba signed url (kalau bucket privat)
     try {
@@ -387,8 +422,8 @@
 
   function setDocsTab(tab) {
     lastDocsTab = tab || "SOP";
-    const allBtns = [els.tabBtnSOP, els.tabBtnIK, els.tabBtnREC];
-    const allPanels = [els.tabPanelSOP, els.tabPanelIK, els.tabPanelREC];
+    const allBtns = [els.tabBtnSOP, els.tabBtnIK, els.tabBtnSIL, els.tabBtnREC];
+    const allPanels = [els.tabPanelSOP, els.tabPanelIK, els.tabPanelSIL, els.tabPanelREC];
     allBtns.forEach(b => b && b.classList.remove("active"));
     allPanels.forEach(p => p && p.classList.remove("active"));
 
@@ -398,6 +433,13 @@
     } else if (tab === "IK") {
       els.tabBtnIK?.classList.add("active");
       els.tabPanelIK?.classList.add("active");
+    } else if (tab === "SIL") {
+      els.tabBtnSIL?.classList.add("active");
+      els.tabPanelSIL?.classList.add("active");
+      // lazy load silabus
+      queueMicrotask(() => {
+        loadSilabusForSelectedSubtype().catch((e) => console.error(e));
+      });
     } else {
       els.tabBtnREC?.classList.add("active");
       els.tabPanelREC?.classList.add("active");
@@ -461,6 +503,345 @@
     // update counts cache & chips
     updateCountsCacheFromLists(pid, docs, recs);
     updateChipCountsInDom();
+  }
+
+
+  // ----------------------------
+  // SILABUS (non-akademik)
+
+// SILABUS (akademik) disimpan sebagai file di Storage (DOCX/PDF)
+async function listSilabusAcademicFiles(programId, subtype) {
+  const folder = `program_pontren/${programId}/SILABUS/${sanitizeFileName(subtype || "AKADEMIK")}`;
+  try {
+    const { data, error } = await db.storage.from(STORAGE_BUCKET).list(folder, {
+      limit: 100,
+      sortBy: { column: "name", order: "desc" },
+    });
+    if (error && isBucketNotFoundError(error)) { showBucketNotFoundHelp(); return []; }
+    if (error) throw error;
+    return (data || []).filter(x => x && x.name && x.name !== ".emptyFolderPlaceholder");
+  } catch (err) {
+    console.error(err);
+    notify("Gagal memuat daftar silabus akademik (cek bucket/policy).", "error");
+    return [];
+  }
+}
+
+function renderSilabusAcademicList(programId, subtype, files) {
+  if (!els.silAcademicList) return;
+  els.silAcademicList.innerHTML = "";
+  const folder = `program_pontren/${programId}/SILABUS/${sanitizeFileName(subtype || "AKADEMIK")}`;
+  const rows = Array.isArray(files) ? files : [];
+  if (rows.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "hint";
+    empty.innerHTML = "Belum ada file silabus akademik. Unduh template, isi, lalu unggah.";
+    els.silAcademicList.appendChild(empty);
+    return;
+  }
+
+  rows.forEach((f) => {
+    const fullPath = `${folder}/${f.name}`;
+    const card = document.createElement("div");
+    card.className = "doc-card";
+    card.innerHTML = `
+      <div class="doc-main">
+        <div class="doc-title">${escapeHtmlLite(f.name)}</div>
+        <div class="doc-sub">${escapeHtmlLite(subtype)} • ${escapeHtmlLite(f.updated_at || f.created_at || "")}</div>
+      </div>
+      <div class="doc-actions">
+        <button class="btn btn-secondary btn-sm" type="button" data-open-sil="${escapeHtmlLite(fullPath)}"><i class="ph ph-eye"></i> Buka</button>
+      </div>
+    `;
+    els.silAcademicList.appendChild(card);
+  });
+
+  els.silAcademicList.querySelectorAll("[data-open-sil]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const path = btn.getAttribute("data-open-sil");
+      if (!path) return;
+      const url = await getFileUrl(path);
+      if (!url) return;
+      window.open(url, "_blank");
+    });
+  });
+}
+
+async function loadSilabusAcademic(programId, subtype) {
+  const files = await listSilabusAcademicFiles(programId, subtype);
+  renderSilabusAcademicList(programId, subtype, files);
+}
+
+async function uploadSilabusAcademic(file) {
+  if (!activeProgramRow?.id) return;
+  const pid = activeProgramRow.id;
+  const subtype = getSelectedSilSubtype();
+  if (subtype !== "AKADEMIK") {
+    notify("Unggah ini khusus untuk Silabus Akademik.", "error");
+    return;
+  }
+  if (!file) return;
+  const path = buildStoragePathSilabus(pid, subtype, file.name || "Silabus.docx");
+  try {
+    const { error } = await db.storage.from(STORAGE_BUCKET).upload(path, file, {
+      upsert: false,
+      contentType: file.type || undefined,
+    });
+    if (error && isBucketNotFoundError(error)) { showBucketNotFoundHelp(); return; }
+    if (error) throw error;
+    notify("Silabus akademik terunggah.", "success");
+    await loadSilabusAcademic(pid, subtype);
+  } catch (err) {
+    console.error(err);
+    notify("Gagal unggah silabus akademik: " + (err?.message || String(err)), "error");
+  }
+}
+
+
+  // ----------------------------
+  function escapeHtmlLite(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function toDatetimeLocalValue(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  function fromDatetimeLocalToIso(val) {
+    if (!val) return null;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function setSilStatus(msg, kind = "info") {
+    if (!els.silStatus) return;
+    els.silStatus.textContent = msg || "";
+    if (kind === "success") els.silStatus.style.color = "var(--success)";
+    else if (kind === "error") els.silStatus.style.color = "var(--danger)";
+    else els.silStatus.style.color = "var(--text-dim)";
+  }
+
+  function getSelectedSilSubtype() {
+    return els.sil_subtype?.value || "BAHASA_ILQO_MUFRODAT";
+  }
+
+  function renderSilabusItems(items) {
+    if (!els.silTbody) return;
+    els.silTbody.innerHTML = "";
+
+    const rows = Array.isArray(items) ? items : [];
+    if (rows.length === 0) rows.push({ topik: "", pic: "", waktu: "", tempat: "", sasaran: "" });
+
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input class="sil_topik" type="text" placeholder="Materi/topik" value="${escapeHtmlLite(r.topik || "")}"></td>
+        <td><input class="sil_pic" type="text" placeholder="PIC" value="${escapeHtmlLite(r.pic || "")}"></td>
+        <td><input class="sil_waktu" type="datetime-local" value="${escapeHtmlLite(r.waktu || "")}"></td>
+        <td><input class="sil_tempat" type="text" placeholder="Tempat" value="${escapeHtmlLite(r.tempat || "")}"></td>
+        <td><input class="sil_sasaran" type="text" placeholder="Sasaran" value="${escapeHtmlLite(r.sasaran || "")}"></td>
+        <td style="text-align:right"><button class="btn-row-del" type="button" data-sil-del="1" title="Hapus baris"><i class="ph ph-trash"></i></button></td>
+      `;
+      els.silTbody.appendChild(tr);
+    });
+  }
+
+  function readSilabusItemsFromDom() {
+    const out = [];
+    if (!els.silTbody) return out;
+    els.silTbody.querySelectorAll("tr").forEach((tr) => {
+      const topik = tr.querySelector(".sil_topik")?.value || "";
+      const pic = tr.querySelector(".sil_pic")?.value || "";
+      const waktuLocal = tr.querySelector(".sil_waktu")?.value || "";
+      const tempat = tr.querySelector(".sil_tempat")?.value || "";
+      const sasaran = tr.querySelector(".sil_sasaran")?.value || "";
+      out.push({ topik, pic, waktuLocal, tempat, sasaran });
+    });
+    return out;
+  }
+
+  function addSilabusRow() {
+    const current = readSilabusItemsFromDom();
+    current.push({ topik: "", pic: "", waktuLocal: "", tempat: "", sasaran: "" });
+    // normalisasi key waktu
+    const normalized = current.map((r) => ({
+      topik: r.topik || "",
+      pic: r.pic || "",
+      waktu: r.waktu || r.waktuLocal || "",
+      tempat: r.tempat || "",
+      sasaran: r.sasaran || "",
+    }));
+    renderSilabusItems(normalized);
+  }
+
+  async function loadSilabusForSelectedSubtype() {
+    if (!activeProgramRow?.id) return;
+    const programId = activeProgramRow.id;
+    const subtype = getSelectedSilSubtype();
+
+
+// Toggle UI: AKADEMIK pakai file (Storage), non-akademik pakai tabel (DB)
+if (els.silAcademicBox && els.silNonAcademicBox && els.btnUploadSilAcademic) {
+  const isAcad = subtype === "AKADEMIK";
+  els.silAcademicBox.style.display = isAcad ? "block" : "none";
+  els.silNonAcademicBox.style.display = isAcad ? "none" : "block";
+  els.btnUploadSilAcademic.style.display = isAcad ? "inline-flex" : "none";
+}
+
+if (subtype === "AKADEMIK") {
+  setSilStatus("");
+  await loadSilabusAcademic(programId, subtype);
+  return;
+}
+
+    setSilStatus("Memuat silabus...", "info");
+
+    // ambil meta
+    let meta = null;
+    try {
+      const { data, error } = await db
+        .from(SILABUS_META_TABLE)
+        .select("*")
+        .eq("program_id", programId)
+        .eq("subtype", subtype)
+        .maybeSingle();
+      if (error) throw error;
+      meta = data;
+    } catch (err) {
+      // tabel belum ada / policy
+      if (!warnedMissingDocsTables) {
+        warnedMissingDocsTables = true;
+        notify("Tabel silabus belum ada / belum bisa diakses. Jalankan SQL migration dulu.", "error");
+      }
+      setSilStatus("Gagal memuat (cek migration/policy)", "error");
+      return;
+    }
+
+    activeSilabusId = meta?.id || null;
+    activeSilabusSubtype = subtype;
+    if (els.sil_notes) els.sil_notes.value = meta?.notes || "";
+
+    // ambil items
+    let items = [];
+    if (activeSilabusId) {
+      items = await safeSelect(SILABUS_ITEMS_TABLE, (t) =>
+        t.select("*")
+          .eq("silabus_id", activeSilabusId)
+          .order("created_at", { ascending: true })
+      );
+    }
+
+    const uiItems = (items || []).map((it) => ({
+      topik: it.topik || "",
+      pic: it.pic || "",
+      waktu: toDatetimeLocalValue(it.waktu),
+      tempat: it.tempat || "",
+      sasaran: it.sasaran || "",
+    }));
+
+    renderSilabusItems(uiItems);
+    setSilStatus(meta ? "Silabus ditemukan." : "Belum ada silabus untuk jenis ini.", "info");
+  }
+
+  async function saveSilabus() {
+    if (!activeProgramRow?.id) return;
+    const programId = activeProgramRow.id;
+    const subtype = getSelectedSilSubtype();
+    const notes = norm(els.sil_notes?.value);
+
+    // ambil dari DOM + bersihkan baris kosong
+    const raw = readSilabusItemsFromDom();
+    const rows = raw
+      .map((r) => ({
+        topik: norm(r.topik),
+        pic: norm(r.pic),
+        waktuLocal: r.waktuLocal || "",
+        tempat: norm(r.tempat),
+        sasaran: norm(r.sasaran),
+      }))
+      .filter((r) => r.topik || r.pic || r.waktuLocal || r.tempat || r.sasaran);
+
+    // validasi topik minimal jika baris ada
+    for (const r of rows) {
+      if (!r.topik) {
+        notify("Kolom 'Topik/Tema/Materi' wajib diisi untuk setiap baris yang disimpan.", "error");
+        return;
+      }
+    }
+
+    setSilStatus("Menyimpan...", "info");
+
+    // 1) pastikan meta ada
+    let metaId = null;
+    try {
+      const { data: existing, error: selErr } = await db
+        .from(SILABUS_META_TABLE)
+        .select("id")
+        .eq("program_id", programId)
+        .eq("subtype", subtype)
+        .maybeSingle();
+      if (selErr) throw selErr;
+
+      if (existing?.id) {
+        metaId = existing.id;
+        const { error: upErr } = await db
+          .from(SILABUS_META_TABLE)
+          .update({ notes })
+          .eq("id", metaId);
+        if (upErr) throw upErr;
+      } else {
+        const { data: ins, error: insErr } = await db
+          .from(SILABUS_META_TABLE)
+          .insert({ program_id: programId, subtype, notes })
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+        metaId = ins.id;
+      }
+
+      // 2) replace items
+      const { error: delErr } = await db
+        .from(SILABUS_ITEMS_TABLE)
+        .delete()
+        .eq("silabus_id", metaId);
+      if (delErr) throw delErr;
+
+      if (rows.length) {
+        const payload = rows.map((r) => ({
+          silabus_id: metaId,
+          topik: r.topik,
+          pic: r.pic || null,
+          waktu: fromDatetimeLocalToIso(r.waktuLocal),
+          tempat: r.tempat || null,
+          sasaran: r.sasaran || null,
+        }));
+        const { error: ins2Err } = await db.from(SILABUS_ITEMS_TABLE).insert(payload);
+        if (ins2Err) throw ins2Err;
+      }
+
+      activeSilabusId = metaId;
+      activeSilabusSubtype = subtype;
+
+      setSilStatus("Tersimpan ✓", "success");
+      notify("Silabus tersimpan.", "success");
+    } catch (err) {
+      console.error(err);
+      setSilStatus("Gagal menyimpan (cek policy/RLS)", "error");
+      notify("Gagal menyimpan silabus: " + (err?.message || String(err)), "error");
+    }
   }
 
   // ----------------------------
@@ -1845,7 +2226,30 @@ els.fileExcel.addEventListener("change", async (e) => {
   });
   els.tabBtnSOP?.addEventListener("click", () => setDocsTab("SOP"));
   els.tabBtnIK?.addEventListener("click", () => setDocsTab("IK"));
+  els.tabBtnSIL?.addEventListener("click", () => setDocsTab("SIL"));
   els.tabBtnREC?.addEventListener("click", () => setDocsTab("REC"));
+
+  // Silabus (non-akademik)
+  els.sil_subtype?.addEventListener("change", () => loadSilabusForSelectedSubtype());
+  els.btnSilAddRow?.addEventListener("click", addSilabusRow);
+  els.btnSilSave?.addEventListener("click", saveSilabus);
+
+  // Silabus akademik upload (file)
+  els.btnUploadSilAcademic?.addEventListener("click", () => {
+    els.sil_academic_file?.click();
+  });
+  els.sil_academic_file?.addEventListener("change", async () => {
+    const file = els.sil_academic_file?.files?.[0];
+    await uploadSilabusAcademic(file);
+    if (els.sil_academic_file) els.sil_academic_file.value = "";
+  });
+  els.silTbody?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-sil-del]");
+    if (!btn) return;
+    const tr = btn.closest("tr");
+    if (!tr) return;
+    tr.remove();
+  });
 
   // Download template XLSX isi otomatis (prefilled)
   els.btnTemplateSOPPrefill?.addEventListener("click", () => downloadTemplatePrefilled("SOP"));
@@ -1857,6 +2261,7 @@ els.fileExcel.addEventListener("change", async (e) => {
     { btn: els.btnTplSOP, menu: els.menuTplSOP },
     { btn: els.btnTplIK, menu: els.menuTplIK },
     { btn: els.btnTplREC, menu: els.menuTplREC },
+    { btn: els.btnTplSIL, menu: els.menuTplSIL },
     { btn: els.btnRecAddMenu, menu: els.menuRecAdd },
   ].filter(x => x.btn && x.menu);
 

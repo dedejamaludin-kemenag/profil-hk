@@ -275,7 +275,58 @@
 
     .parse-preview strong { color: var(--text-main); }
 
-    /* FILTER PANEL */
+    
+
+    /* SILABUS (non-akademik) */
+    .sil-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--bg-surface);
+    }
+    .sil-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 14px;
+    }
+    .sil-table thead th {
+      text-align: left;
+      padding: 12px 12px;
+      background: rgba(15,23,42,0.04);
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 800;
+    }
+    .sil-table tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(15,23,42,0.06);
+      vertical-align: top;
+    }
+    .sil-table input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      color: var(--text-main);
+    }
+    .sil-table .btn-row-del {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+    }
+    .sil-table .btn-row-del:hover { border-color: var(--danger); color: var(--danger); }
+/* FILTER PANEL */
     .filter-panel {
       background: var(--bg-surface-glass);
       backdrop-filter: blur(16px);
@@ -1086,6 +1137,7 @@
       <div class="tabs" role="tablist">
         <button class="tab-btn active" id="tabBtnSOP" data-tab="SOP" type="button"><i class="ph ph-file-text"></i> SOP</button>
         <button class="tab-btn" id="tabBtnIK" data-tab="IK" type="button"><i class="ph ph-list-checks"></i> Instruksi Kerja</button>
+                <button class="tab-btn" id="tabBtnSIL" data-tab="SIL" type="button"><i class="ph ph-notebook"></i> Silabus</button>
         <button class="tab-btn" id="tabBtnREC" data-tab="REC" type="button"><i class="ph ph-paperclip"></i> Bukti (Record)</button>
       </div>
 
@@ -1182,6 +1234,79 @@
 
         <div class="list-stack" id="docsListIK"></div>
       </div>
+
+      
+
+      <!-- TAB: SILABUS (non-akademik) -->
+      <div class="tab-panel" id="tabPanelSIL">
+        <div class="doc-meta">
+          <div class="form-group">
+            <label>Jenis Silabus</label>
+            <select id="sil_subtype">
+              <option value="AKADEMIK">Akademik (Mapel)</option>
+              <option value="BAHASA_ILQO_MUFRODAT">Bahasa • Ilqo Mufrodat</option>
+              <option value="BAHASA_ILQO_KALIMAH">Bahasa • Ilqo Kalimah</option>
+              <option value="BAHASA_MUHADHOROH">Bahasa • Muhadhoroh</option>
+              <option value="BAHASA_HIWAR">Bahasa • Hiwar</option>
+              <option value="LIQO_KAMAR">Liqo Kamar</option>
+              <option value="KAJIAN_KITAB">Kajian Kitab</option>
+              <option value="HALAQOH">Halaqoh</option>
+              <option value="EKSKUL">Ekskul</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Keterangan (opsional)</label>
+            <input id="sil_notes" type="text" placeholder="Contoh: Semester Genap 2026" />
+          </div>
+        </div>
+
+        
+
+<input id="sil_academic_file" type="file" accept=".pdf,.doc,.docx" style="display:none" />
+
+<div class="action-row" style="margin-top: 10px;">
+  <div class="dd" id="ddSilTpl">
+    <button class="btn btn-secondary" id="btnTplSIL" type="button" style="height:44px"><i class="ph ph-download-simple"></i> Unduh Template <i class="ph ph-caret-down"></i></button>
+    <div class="dd-menu" id="menuTplSIL">
+      <a class="dd-item" href="./templates/Template_Silabus_Akademik.docx" download><i class="ph ph-file-doc"></i> Template Silabus Akademik (DOCX)</a>
+      <a class="dd-item" href="./templates/Template_Silabus_NonAkademik.xlsx" download><i class="ph ph-file-xls"></i> Template Silabus Non-Akademik (XLSX)</a>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btnUploadSilAcademic" type="button" style="height:44px"><i class="ph ph-upload"></i> Unggah Silabus (Akademik)</button>
+</div>
+
+<div id="silAcademicBox" style="display:none; margin-top: 10px;">
+  <div class="hint">Silabus <strong>akademik</strong> memakai template DOCX yang antum kirim. Isi template, lalu unggah versi final (PDF/DOCX). File akan disimpan di Storage sebagai dokumen silabus.</div>
+  <div class="list-stack" id="silAcademicList"></div>
+</div>
+
+<div id="silNonAcademicBox" style="margin-top: 10px;">
+<div class="sil-table-wrap">
+          <table class="sil-table">
+            <thead>
+              <tr>
+                <th style="width:34%">Topik / Tema / Materi</th>
+                <th style="width:16%">PIC</th>
+                <th style="width:18%">Waktu</th>
+                <th style="width:16%">Tempat</th>
+                <th style="width:16%">Sasaran</th>
+                <th style="width:52px"></th>
+              </tr>
+            </thead>
+            <tbody id="silTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="action-row" style="justify-content: space-between; margin-top: 12px;">
+          <button class="btn btn-secondary" id="btnSilAddRow" type="button" style="height:44px"><i class="ph ph-plus"></i> Tambah Baris</button>
+          <button class="btn btn-primary" id="btnSilSave" type="button" style="height:44px"><i class="ph ph-floppy-disk"></i> Simpan Silabus</button>
+        </div>
+        <div class="hint">Silabus non-akademik cukup 5 kolom: <strong>topik</strong>, <strong>PIC</strong>, <strong>waktu</strong>, <strong>tempat</strong>, <strong>sasaran</strong>. Data tersimpan di database dan bisa dipakai untuk monev.</div>
+        <div id="silStatus" style="margin-top:8px; color: var(--text-dim); font-weight: 600; font-size: 13px;"></div>
+
+      
+        </div>
+</div>
 
       <!-- TAB: RECORD -->
       <div class="tab-panel" id="tabPanelREC">
