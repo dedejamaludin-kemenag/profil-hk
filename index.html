@@ -18,13 +18,14 @@
   /* --- TEMA: SOFT KONTRAS (background lebih gelap tipis, kartu lebih terang) --- */
 
   /* BASE */
-  --bg-body: #e9eff7;            /* background halaman (soft cool) */
+  --bg-body: #e3ecfa;            /* background halaman (soft cool, sedikit lebih berani) */
   --bg-surface: #ffffff;         /* kartu/panel */
   --bg-surface-glass: rgba(255, 255, 255, 0.88);
-  --bg-input: #e3ebf5;           /* input/field */
+  /* Input tetap putih polos (biar fokus & rapi walau kartu warna-warni) */
+  --bg-input: #ffffff;
 
-  --border: #cfd9e6;             /* border default */
-  --border-light: #b8c6d8;       /* border hover/focus */
+  --border: #c3d1e2;             /* border default */
+  --border-light: #aebfd6;       /* border hover/focus */
 
   /* TEXT */
   --text-main: #0f172a;          /* slate-900 */
@@ -37,6 +38,18 @@
   --primary-glow: rgba(34, 197, 94, 0.20);
 
   --accent-blue: #3b82f6;        /* blue-500 */
+
+  /* Accent untuk Silabus */
+  --accent: #a855f7;            /* purple-500 */
+
+  /* Card tones (lebih berani, tapi tetap soft) */
+  --tone-1: rgba(59,130,246,0.20);  /* blue */
+  --tone-2: rgba(34,197,94,0.20);   /* green */
+  --tone-3: rgba(245,158,11,0.20);  /* amber */
+  --tone-4: rgba(236,72,153,0.18);  /* pink */
+  --tone-5: rgba(139,92,246,0.18);  /* violet */
+  --tone-6: rgba(20,184,166,0.20);  /* teal */
+  --tone-7: rgba(148,163,184,0.18); /* slate */
 
   /* Status */
   --success: #10b981;
@@ -63,8 +76,8 @@
       color: var(--text-main);
       /* Background Gradient Halus: Biru di Kiri Atas, Hijau di Kanan Bawah */
       background-image: 
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.14) 0px, transparent 50%);
       background-attachment: fixed;
       min-height: 100vh;
       /* Kunci scroll halaman: scroll utama ada di panel filter & tabel */
@@ -328,7 +341,8 @@
     .sil-table .btn-row-del:hover { border-color: var(--danger); color: var(--danger); }
 /* FILTER PANEL */
     .filter-panel {
-      background: var(--bg-surface-glass);
+      --tone: var(--tone-1);
+      background: linear-gradient(135deg, var(--tone) 0%, rgba(255,255,255,0) 85%), var(--bg-surface-glass);
       backdrop-filter: blur(16px);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
@@ -441,7 +455,8 @@
 
     /* RESULTS TABLE */
     .results-area {
-      background: var(--bg-surface);
+      --tone: var(--tone-2);
+      background: linear-gradient(135deg, var(--tone) 0%, rgba(255,255,255,0) 85%), var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       overflow: hidden;
@@ -651,19 +666,21 @@
     }
 
     .file-row {
+      background: linear-gradient(135deg, var(--tone, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 85%), var(--bg-surface);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 12px 12px;
+      gap: 14px;
+      /* samakan rasa kartu dengan docs-card (Identitas/Isi SOP) */
+      padding: 14px;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #fff;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
     }
-    .file-left { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .file-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
     .file-title { font-weight: 800; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .file-sub { font-size: 12px; color: var(--text-dim); }
-    .file-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .file-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
     .link-btn {
       display: inline-flex;
       align-items: center;
@@ -682,10 +699,12 @@
     .link-btn:hover { border-color: var(--text-main); color: var(--text-main); background: #f8fafc; }
     .link-btn.danger:hover { border-color: var(--danger); color: #fff; background: var(--danger); }
 
-    .list-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    /* jarak antar kartu: samakan dengan gap antar docs-card */
+    .list-stack { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
     
     .cards-container { display: none; padding: 20px; flex-direction: column; gap: 16px; }
-    .m-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-soft); }
+    .m-card {
+      background: linear-gradient(135deg, var(--tone, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 85%), var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-soft); }
     .m-header { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
     .m-title { font-weight: 700; color: var(--accent-blue); font-size: 18px; margin-bottom: 6px; }
     .m-sub { font-size: 15px; color: var(--text-muted); font-style: italic; }
@@ -861,6 +880,16 @@
   color: var(--text-main);
   outline: none;
 }
+
+.modal-body input.summary-pill[disabled]{
+  background: rgba(255,255,255,0.88);
+  border: 1px dashed rgba(59,130,246,0.28);
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 10px 14px;
+  color: var(--text-main);
+}
+
 .modal-body textarea{
   min-height: 120px;
   resize: vertical;
@@ -869,9 +898,10 @@
 .modal-actions{
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, rgba(233,239,247,0.98), rgba(233,239,247,0.72));
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
   padding-top: 12px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 
@@ -955,6 +985,9 @@
   padding: 16px 18px 96px; /* extra bottom space for template dock */
   overflow: auto;
   max-height: calc(96vh - 140px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .docs-grid{
   display: grid;
@@ -966,13 +999,46 @@
   .docs-scroll-area{ max-height: calc(96vh - 160px); }
 }
 .docs-card{
-  background: var(--bg-surface);
+  background: linear-gradient(135deg, var(--tone, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 85%), var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 14px;
   box-shadow: var(--shadow-soft);
 }
-.docs-card.soft{ background: rgba(255,255,255,0.85); }
+.docs-card.soft{ background: linear-gradient(135deg, var(--tone, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 85%), rgba(255,255,255,0.82); }
+
+
+/* --- Card tone cycling (soft/light) --- */
+.docs-scroll-area > .docs-card:nth-child(7n+1),
+.docs-grid > .docs-card:nth-child(7n+1){ --tone: var(--tone-1); }
+.docs-scroll-area > .docs-card:nth-child(7n+2),
+.docs-grid > .docs-card:nth-child(7n+2){ --tone: var(--tone-2); }
+.docs-scroll-area > .docs-card:nth-child(7n+3),
+.docs-grid > .docs-card:nth-child(7n+3){ --tone: var(--tone-3); }
+.docs-scroll-area > .docs-card:nth-child(7n+4),
+.docs-grid > .docs-card:nth-child(7n+4){ --tone: var(--tone-4); }
+.docs-scroll-area > .docs-card:nth-child(7n+5),
+.docs-grid > .docs-card:nth-child(7n+5){ --tone: var(--tone-5); }
+.docs-scroll-area > .docs-card:nth-child(7n+6),
+.docs-grid > .docs-card:nth-child(7n+6){ --tone: var(--tone-6); }
+.docs-scroll-area > .docs-card:nth-child(7n),
+.docs-grid > .docs-card:nth-child(7n){ --tone: var(--tone-7); }
+
+.list-stack > .file-row:nth-child(7n+1){ --tone: var(--tone-1); }
+.list-stack > .file-row:nth-child(7n+2){ --tone: var(--tone-2); }
+.list-stack > .file-row:nth-child(7n+3){ --tone: var(--tone-3); }
+.list-stack > .file-row:nth-child(7n+4){ --tone: var(--tone-4); }
+.list-stack > .file-row:nth-child(7n+5){ --tone: var(--tone-5); }
+.list-stack > .file-row:nth-child(7n+6){ --tone: var(--tone-6); }
+.list-stack > .file-row:nth-child(7n){ --tone: var(--tone-7); }
+
+.cards-container > .m-card:nth-child(7n+1){ --tone: var(--tone-1); }
+.cards-container > .m-card:nth-child(7n+2){ --tone: var(--tone-2); }
+.cards-container > .m-card:nth-child(7n+3){ --tone: var(--tone-3); }
+.cards-container > .m-card:nth-child(7n+4){ --tone: var(--tone-4); }
+.cards-container > .m-card:nth-child(7n+5){ --tone: var(--tone-5); }
+.cards-container > .m-card:nth-child(7n+6){ --tone: var(--tone-6); }
+.cards-container > .m-card:nth-child(7n){ --tone: var(--tone-7); }
 .docs-card-title{
   font-weight: 800;
   margin-bottom: 10px;
@@ -1258,7 +1324,7 @@
 
   <div class="form-group">
     <label>Silabus</label>
-    <input type="text" id="e_silabus" disabled placeholder="Ringkasan otomatis. Kelola di Kelola Dokumen → Silabus">
+    <input type="text" id="e_silabus" disabled class="summary-pill" placeholder="Ringkasan otomatis. Kelola di Kelola Dokumen → Silabus">
   </div>
 
   <div class="form-group">
@@ -1273,7 +1339,7 @@
 
   <div class="form-group">
     <label>Bukti</label>
-    <input type="text" id="e_bukti" disabled placeholder="Diisi otomatis dari Kelola Dokumen (ringkasan)">
+    <input type="text" id="e_bukti" disabled class="summary-pill" placeholder="Diisi otomatis dari Kelola Dokumen (ringkasan)">
   </div>
 
   <div class="inline-actions">
@@ -1664,15 +1730,17 @@
           </div>
           <div id="silAStatus" style="margin-top:8px; color: var(--text-dim); font-weight: 600; font-size: 13px;"></div>
         </section>
-      </div>
 
-      <div class="docs-card-title" style="margin-top:10px"><i class="ph ph-paperclip"></i> Lampiran Silabus Akademik (opsional)</div>
-      <div class="hint">Kalau butuh file final (DOCX/PDF) untuk arsip, unggah di sini.</div>
-      <input id="silA_final_file" type="file" accept=".pdf,.doc,.docx" />
-      <div class="action-row" style="margin-top:10px">
-        <button class="btn btn-primary" id="btnUploadSilAcademic" type="button" style="height:44px"><i class="ph ph-upload"></i> Unggah Final</button>
+      <section class="docs-card soft">
+        <div class="docs-card-title"><i class="ph ph-paperclip"></i> Lampiran Silabus Akademik (opsional)</div>
+        <div class="hint">Kalau butuh file final (DOCX/PDF) untuk arsip, unggah di sini.</div>
+        <input id="silA_final_file" type="file" accept=".pdf,.doc,.docx" />
+        <div class="action-row" style="margin-top:10px">
+          <button class="btn btn-primary" id="btnUploadSilAcademic" type="button" style="height:44px"><i class="ph ph-upload"></i> Unggah Final</button>
+        </div>
+        <div class="list-stack" id="silAcademicList"></div>
+      </section>
       </div>
-      <div class="list-stack" id="silAcademicList"></div>
     </div>
 
     <div class="docs-card" id="silNonAcademicBox">
